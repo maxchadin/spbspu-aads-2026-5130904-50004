@@ -145,10 +145,37 @@ namespace chadin
       ++size_;
     }
 
+    void pushFront(T&& value)
+    {
+      Node< T >* newNode = new Node< T >(std::move(value));
+      if (isEmpty())
+      {
+        newNode->next = newNode;
+        newNode->prev = newNode;
+        head_ = newNode;
+      }
+      else
+      {
+        Node< T >* tail = head_->prev;
+        newNode->next = head_;
+        newNode->prev = tail;
+        tail->next = newNode;
+        head_->prev = newNode;
+        head_ = newNode;
+      }
+      ++size_;
+    }
+
     void pushBack(const T& value)
     {
       pushFront(value);
-      head = head_->next;
+      head_ = head_->next;
+    }
+
+    void pushBack(T&& value)
+    {
+      pushFront(std::move(value));
+      head_ = head_->next;
     }
 
     void popFront() noexcept
