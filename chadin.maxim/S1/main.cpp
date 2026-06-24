@@ -1,9 +1,8 @@
 #include <iostream>
 #include <string>
 #include <limits>
-#include <cctype>
-#include <stdexcept>
 #include <utility>
+#include <cctype>
 #include "BiList.hpp"
 
 int main()
@@ -18,12 +17,6 @@ int main()
     BiList< unsigned long long > numbers;
     while (std::cin.peek() != '\n' && std::cin.peek() != EOF)
     {
-      if (std::isspace(std::cin.peek()))
-      {
-        std::cin.ignore();
-        continue;
-      }
-
       unsigned long long num = 0;
       if (std::cin >> num)
       {
@@ -74,12 +67,6 @@ int main()
   }
 
   BiList< unsigned long long > sums;
-  BiList< LCIter< unsigned long long > > currentIters;
-
-  for (auto it = data.cbegin(); it != data.cend(); ++it)
-  {
-    currentIters.pushBack(it->second.cbegin());
-  }
 
   try
   {
@@ -87,34 +74,36 @@ int main()
     {
       unsigned long long rowSum = 0;
       bool isFirstInRow = true;
-      auto currIt = currentIters.begin();
 
-      for (auto dataIt = data.cbegin(); dataIt != data.cend(); ++dataIt)
+      for (auto it = data.cbegin(); it != data.cend(); ++it)
       {
-        if (*currIt != dataIt->second.cend())
+        if (i < it->second.getSize())
         {
-          unsigned long long val = **currIt;
+          auto numIt = it->second.cbegin();
+          for (size_t j = 0; j < i; ++j)
+          {
+            ++numIt;
+          }
+
           if (!isFirstInRow)
           {
             std::cout << " ";
           }
-          std::cout << val;
+          std::cout << *numIt;
           isFirstInRow = false;
 
-          if (std::numeric_limits< unsigned long long >::max() - rowSum < val)
+          if (std::numeric_limits< unsigned long long >::max() - rowSum < *numIt)
           {
             throw std::overflow_error("Sum overflow");
           }
-          rowSum += val;
-          ++(*currIt);
+          rowSum += *numIt;
         }
-        ++currIt;
       }
       std::cout << "\n";
       sums.pushBack(rowSum);
     }
   }
-  catch (const std::exception& e)
+  catch (const std::overflow_error& e)
   {
     std::cerr << e.what() << "\n";
     return 1;

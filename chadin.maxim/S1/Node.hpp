@@ -12,8 +12,17 @@ namespace chadin
     Node* prev;
     Node* next;
 
-    Node(const T& value) : val(value), prev(nullptr), next(nullptr) {}
-    Node(T&& value) : val(std::move(value)), prev(nullptr), next(nullptr) {}
+    Node(const T& value) :
+      val(value),
+      prev(nullptr),
+      next(nullptr)
+    {}
+
+    Node(T&& value) noexcept :
+      val(std::move(value)),
+      prev(nullptr),
+      next(nullptr)
+    {}
   };
 }
 

@@ -12,27 +12,45 @@ namespace chadin
   class BiList;
 
   template< class T >
-  class LCIter : public std::iterator< std::bidirectional_iterator_tag, T, std::ptrdiff_t, const T*, const T& >
+  class LCIter : public std::iterator< std::bidirectional_iterator_tag, const T >
   {
   public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type        = T;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = const T*;
+    using reference         = const T&;
+
     friend class BiList< T >;
 
-    LCIter() noexcept : node_(nullptr), head_(nullptr) {}
-    LCIter(const LIter< T >& other) noexcept : node_(other.node_), head_(other.head_) {}
+    LCIter() noexcept :
+      node_(nullptr),
+      head_(nullptr)
+    {}
 
-    typename LCIter::reference operator*() const
+    LCIter(const Node< T >* node, const Node< T >* head) noexcept :
+      node_(const_cast< Node< T >* >(node)),
+      head_(const_cast< Node< T >* >(head))
+    {}
+
+    LCIter(const LIter< T >& other) noexcept :
+      node_(other.node_),
+      head_(other.head_)
+    {}
+
+    reference operator*() const noexcept
     {
       return node_->val;
     }
 
-    typename LCIter::pointer operator->() const
+    pointer operator->() const noexcept
     {
       return &(node_->val);
     }
 
     LCIter& operator++() noexcept
     {
-      if (node_ != nullptr)
+      if (node_)
       {
         node_ = node_->next;
         if (node_ == head_)
@@ -54,12 +72,12 @@ namespace chadin
     {
       if (node_ == nullptr)
       {
-        if (head_ != nullptr)
+        if (head_)
         {
           node_ = head_->prev;
         }
       }
-      else if (node_ != head_)
+      else
       {
         node_ = node_->prev;
       }
@@ -84,9 +102,8 @@ namespace chadin
     }
 
   private:
-    const Node< T >* node_;
-    const Node< T >* head_;
-    LCIter(const Node< T >* node, const Node< T >* head) noexcept : node_(node), head_(head) {}
+    Node< T >* node_;
+    Node< T >* head_;
   };
 }
 
