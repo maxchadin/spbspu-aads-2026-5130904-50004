@@ -10,13 +10,24 @@ int main()
   using namespace chadin;
 
   BiList< std::pair< std::string, BiList< unsigned long long > > > data;
-  std::string name = "";
+  std::string name;
 
   while (std::cin >> name)
   {
     BiList< unsigned long long > numbers;
-    while (std::cin.peek() != '\n' && std::cin.peek() != EOF)
+    while (true)
     {
+      int c = std::cin.get();
+      if (c == '\n' || c == EOF)
+      {
+        break;
+      }
+      if (std::isspace(c))
+      {
+        continue;
+      }
+      std::cin.unget();
+
       unsigned long long num = 0;
       if (std::cin >> num)
       {
@@ -25,10 +36,7 @@ int main()
       else
       {
         std::cin.clear();
-        while (std::cin.peek() != '\n' && std::cin.peek() != EOF && !std::isdigit(std::cin.peek()))
-        {
-          std::cin.ignore();
-        }
+        std::cin.ignore(1);
       }
     }
     data.pushBack({name, std::move(numbers)});
@@ -66,15 +74,36 @@ int main()
     return 0;
   }
 
-  BiList< unsigned long long > sums;
+  for (size_t i = 0; i < maxLen; ++i)
+  {
+    bool isFirstInRow = true;
+    for (auto it = data.cbegin(); it != data.cend(); ++it)
+    {
+      if (i < it->second.getSize())
+      {
+        auto numIt = it->second.cbegin();
+        for (size_t j = 0; j < i; ++j)
+        {
+          ++numIt;
+        }
 
+        if (!isFirstInRow)
+        {
+          std::cout << " ";
+        }
+        std::cout << *numIt;
+        isFirstInRow = false;
+      }
+    }
+    std::cout << "\n";
+  }
+
+  BiList< unsigned long long > sums;
   try
   {
     for (size_t i = 0; i < maxLen; ++i)
     {
       unsigned long long rowSum = 0;
-      bool isFirstInRow = true;
-
       for (auto it = data.cbegin(); it != data.cend(); ++it)
       {
         if (i < it->second.getSize())
@@ -85,13 +114,6 @@ int main()
             ++numIt;
           }
 
-          if (!isFirstInRow)
-          {
-            std::cout << " ";
-          }
-          std::cout << *numIt;
-          isFirstInRow = false;
-
           if (std::numeric_limits< unsigned long long >::max() - rowSum < *numIt)
           {
             throw std::overflow_error("Sum overflow");
@@ -99,7 +121,6 @@ int main()
           rowSum += *numIt;
         }
       }
-      std::cout << "\n";
       sums.pushBack(rowSum);
     }
   }
