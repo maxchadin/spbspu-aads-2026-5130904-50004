@@ -363,5 +363,4 @@ namespace chadin
     size_t size_;
   };
 }
-
 #endif
