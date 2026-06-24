@@ -107,7 +107,7 @@ namespace chadin
     friend class BiList< T >;
 
     LCIter() : node_(nullptr), head_(nullptr) {}
-    LCIter(const LIter< T >& other) : node_(other.node_), head_(other.head_) {} // Неявное преобразование
+    LCIter(const LIter< T >& other) : node_(other.node_), head_(other.head_) {}
 
     reference operator*() const { return node_->val; }
     pointer operator->() const { return &(node_->val); }

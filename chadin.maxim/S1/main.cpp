@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <limits>
+#include <cctype>
 #include "BiList.hpp"
 
 int main()
@@ -9,14 +10,20 @@ int main()
   try
   {
     BiList< std::pair< std::string, BiList< unsigned long long > > > data;
-    std::string name = "";
+    std::string name;
 
     while (std::cin >> name)
     {
       BiList< unsigned long long > numbers;
-      while (std::cin.peek() != '\n' && std::cin.peek() != EOF)
+      char c;
+      while (std::cin.get(c))
       {
+        if (c == '\n') break;
+        if (std::isspace(c)) continue;
+
+        std::cin.putback(c);
         unsigned long long num = 0;
+
         if (std::cin >> num)
         {
           numbers.pushBack(num);
@@ -24,10 +31,7 @@ int main()
         else
         {
           std::cin.clear();
-          while (std::cin.peek() != '\n' && std::cin.peek() != EOF && !std::isdigit(std::cin.peek()))
-          {
-            std::cin.ignore();
-          }
+          std::cin.ignore();
         }
       }
       data.pushBack({name, std::move(numbers)});
@@ -39,6 +43,7 @@ int main()
       return 0;
     }
 
+    size_t maxLen = 0;
     size_t nameCount = 0;
     for (auto it = data.cbegin(); it != data.cend(); ++it)
     {
@@ -47,22 +52,26 @@ int main()
       {
         std::cout << " ";
       }
-    }
-    std::cout << "\n";
-
-    size_t maxLen = 0;
-    for (auto it = data.cbegin(); it != data.cend(); ++it)
-    {
       if (it->second.getSize() > maxLen)
       {
         maxLen = it->second.getSize();
       }
     }
+    std::cout << "\n";
 
     if (maxLen == 0)
     {
       std::cout << "0\n";
       return 0;
+    }
+
+    BiList< LCIter< unsigned long long > > currentIters;
+    BiList< LCIter< unsigned long long > > endIters;
+
+    for (auto it = data.cbegin(); it != data.cend(); ++it)
+    {
+      currentIters.pushBack(it->second.cbegin());
+      endIters.pushBack(it->second.cend());
     }
 
     BiList< unsigned long long > sums;
@@ -72,35 +81,37 @@ int main()
     {
       unsigned long long rowSum = 0;
       bool isFirstInRow = true;
-      for (auto it = data.cbegin(); it != data.cend(); ++it)
-      {
-        if (i < it->second.getSize())
-        {
-          auto numIt = it->second.cbegin();
-          for (size_t j = 0; j < i; ++j)
-          {
-            ++numIt;
-          }
 
+      auto currIt = currentIters.begin();
+      auto endIt = endIters.cbegin();
+
+      for (auto dataIt = data.cbegin(); dataIt != data.cend(); ++dataIt)
+      {
+        if (*currIt != *endIt)
+        {
+          unsigned long long val = **currIt;
           if (!isFirstInRow)
           {
             std::cout << " ";
           }
-          std::cout << *numIt;
+          std::cout << val;
           isFirstInRow = false;
 
           if (!overflowOccurred)
           {
-            if (std::numeric_limits< unsigned long long >::max() - rowSum < *numIt)
+            if (std::numeric_limits< unsigned long long >::max() - rowSum < val)
             {
               overflowOccurred = true;
             }
             else
             {
-              rowSum += *numIt;
+              rowSum += val;
             }
           }
+          ++(*currIt);
         }
+        ++currIt;
+        ++endIt;
       }
       std::cout << "\n";
       sums.pushBack(rowSum);
@@ -108,7 +119,8 @@ int main()
 
     if (overflowOccurred)
     {
-      throw std::overflow_error("Sum overflow");
+      std::cerr << "Sum overflow\n";
+      return 1;
     }
 
     size_t sumCount = 0;
@@ -124,8 +136,9 @@ int main()
   }
   catch (const std::exception& e)
   {
-    std::cerr << e.what() << "\n";
+    std::cerr << "Error: " << e.what() << "\n";
     return 1;
   }
+
   return 0;
 }
