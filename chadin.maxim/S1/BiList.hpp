@@ -16,16 +16,17 @@ namespace chadin
   public:
     BiList() noexcept : head_(nullptr), size_(0) {}
 
-    ~BiList() noexcept
-    {
-      clear();
-    }
-
     BiList(const BiList& other) : head_(nullptr), size_(0)
     {
-      for (auto it = other.cbegin(); it != other.cend(); ++it)
+      if (!other.isEmpty())
       {
-        pushBack(*it);
+        Node< T >* curr = other.head_;
+        do
+        {
+          pushBack(curr->val);
+          curr = curr->next;
+        }
+        while (curr != other.head_);
       }
     }
 
@@ -33,6 +34,11 @@ namespace chadin
     {
       other.head_ = nullptr;
       other.size_ = 0;
+    }
+
+    ~BiList() noexcept
+    {
+      clear();
     }
 
     BiList& operator=(const BiList& other)
@@ -64,14 +70,14 @@ namespace chadin
       std::swap(size_, other.size_);
     }
 
-    size_t getSize() const noexcept
-    {
-      return size_;
-    }
-
     bool isEmpty() const noexcept
     {
       return size_ == 0;
+    }
+
+    size_t getSize() const noexcept
+    {
+      return size_;
     }
 
     T& front()
@@ -141,27 +147,16 @@ namespace chadin
 
     void pushBack(const T& value)
     {
-      Node< T >* newNode = new Node< T >(value);
-      if (isEmpty())
-      {
-        newNode->next = newNode;
-        newNode->prev = newNode;
-        head_ = newNode;
-      }
-      else
-      {
-        Node< T >* tail = head_->prev;
-        newNode->next = head_;
-        newNode->prev = tail;
-        tail->next = newNode;
-        head_->prev = newNode;
-      }
-      ++size_;
+      pushFront(value);
+      head = head_->next;
     }
 
     void popFront() noexcept
     {
-      if (isEmpty()) return;
+      if (isEmpty())
+      {
+        return;
+      }
       if (size_ == 1)
       {
         delete head_;
@@ -169,11 +164,11 @@ namespace chadin
       }
       else
       {
-        Node< T >* tail = head_->prev;
         Node< T >* oldHead = head_;
+        Node< T >* tail = head_->prev;
         head_ = head_->next;
-        tail->next = head_;
         head_->prev = tail;
+        tail->next = head_;
         delete oldHead;
       }
       --size_;

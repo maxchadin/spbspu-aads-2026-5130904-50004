@@ -2,6 +2,7 @@
 #define CHADIN_LITER_HPP
 
 #include <iterator>
+#include <cstddef>
 #include "Node.hpp"
 
 namespace chadin
@@ -13,7 +14,7 @@ namespace chadin
   class LCIter;
 
   template< class T >
-  class LIter : public std::iterator< std::bidirectional_iterator_tag, T >
+  class LIter : public std::iterator< std::bidirectional_iterator_tag, T, std::ptrdiff_t, T*, T& >
   {
   public:
     friend class BiList< T >;
@@ -85,9 +86,9 @@ namespace chadin
     }
 
   private:
-    LIter(Node< T >* node, Node< T >* head) noexcept : node_(node), head_(head) {}
     Node< T >* node_;
     Node< T >* head_;
+    LIter(Node< T >* node, Node< T >* head) noexcept : node_(node), head_(head) {}
   };
 }
 

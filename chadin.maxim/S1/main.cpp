@@ -2,6 +2,7 @@
 #include <string>
 #include <limits>
 #include <cctype>
+#include <stdexcept>
 #include "BiList.hpp"
 
 int main()
@@ -9,26 +10,20 @@ int main()
   using namespace chadin;
 
   BiList< std::pair< std::string, BiList< unsigned long long > > > data;
-  std::string name;
+  std::string name = "";
 
   while (std::cin >> name)
   {
     BiList< unsigned long long > numbers;
-    char c;
-    while (std::cin.get(c))
+    while (std::cin.peek() != '\n' && std::cin.peek() != EOF)
     {
-      if (c == '\n')
+      if (std::isspace(std::cin.peek()))
       {
-        break;
-      }
-      if (std::isspace(c))
-      {
+        std::cin.ignore();
         continue;
       }
 
-      std::cin.putback(c);
       unsigned long long num = 0;
-
       if (std::cin >> num)
       {
         numbers.pushBack(num);
@@ -36,7 +31,10 @@ int main()
       else
       {
         std::cin.clear();
-        std::cin.ignore();
+        while (std::cin.peek() != '\n' && std::cin.peek() != EOF && !std::isdigit(std::cin.peek()))
+        {
+          std::cin.ignore();
+        }
       }
     }
     data.pushBack({name, std::move(numbers)});
@@ -48,20 +46,25 @@ int main()
     return 0;
   }
 
-  size_t maxLen = 0;
-  for (auto it = data.cbegin(); it != data.cend(); )
+  size_t nameCount = 0;
+  for (auto it = data.cbegin(); it != data.cend(); ++it)
   {
     std::cout << it->first;
-    if (it->second.getSize() > maxLen)
-    {
-      maxLen = it->second.getSize();
-    }
-    if (++it != data.cend())
+    if (++nameCount < data.getSize())
     {
       std::cout << " ";
     }
   }
   std::cout << "\n";
+
+  size_t maxLen = 0;
+  for (auto it = data.cbegin(); it != data.cend(); ++it)
+  {
+    if (it->second.getSize() > maxLen)
+    {
+      maxLen = it->second.getSize();
+    }
+  }
 
   if (maxLen == 0)
   {
@@ -69,56 +72,58 @@ int main()
     return 0;
   }
 
+  BiList< unsigned long long > sums;
   BiList< LCIter< unsigned long long > > currentIters;
-  BiList< LCIter< unsigned long long > > endIters;
 
   for (auto it = data.cbegin(); it != data.cend(); ++it)
   {
     currentIters.pushBack(it->second.cbegin());
-    endIters.pushBack(it->second.cend());
   }
 
-  BiList< unsigned long long > sums;
-
-  for (size_t i = 0; i < maxLen; ++i)
+  try
   {
-    unsigned long long rowSum = 0;
-    bool isFirstInRow = true;
-
-    auto currIt = currentIters.begin();
-    auto endIt = endIters.cbegin();
-
-    for (auto dataIt = data.cbegin(); dataIt != data.cend(); ++dataIt)
+    for (size_t i = 0; i < maxLen; ++i)
     {
-      if (*currIt != *endIt)
-      {
-        unsigned long long val = **currIt;
-        if (!isFirstInRow)
-        {
-          std::cout << " ";
-        }
-        std::cout << val;
-        isFirstInRow = false;
+      unsigned long long rowSum = 0;
+      bool isFirstInRow = true;
+      auto currIt = currentIters.begin();
 
-        if (std::numeric_limits< unsigned long long >::max() - rowSum < val)
+      for (auto dataIt = data.cbegin(); dataIt != data.cend(); ++dataIt)
+      {
+        if (*currIt != dataIt->second.cend())
         {
-          std::cerr << "Sum overflow\n";
-          return 1;
+          unsigned long long val = **currIt;
+          if (!isFirstInRow)
+          {
+            std::cout << " ";
+          }
+          std::cout << val;
+          isFirstInRow = false;
+
+          if (std::numeric_limits< unsigned long long >::max() - rowSum < val)
+          {
+            throw std::overflow_error("Sum overflow");
+          }
+          rowSum += val;
+          ++(*currIt);
         }
-        rowSum += val;
-        ++(*currIt);
+        ++currIt;
       }
-      ++currIt;
-      ++endIt;
+      std::cout << "\n";
+      sums.pushBack(rowSum);
     }
-    std::cout << "\n";
-    sums.pushBack(rowSum);
+  }
+  catch (const std::exception& e)
+  {
+    std::cerr << e.what() << "\n";
+    return 1;
   }
 
-  for (auto it = sums.cbegin(); it != sums.cend(); )
+  size_t sumCount = 0;
+  for (auto it = sums.cbegin(); it != sums.cend(); ++it)
   {
     std::cout << *it;
-    if (++it != sums.cend())
+    if (++sumCount < sums.getSize())
     {
       std::cout << " ";
     }
