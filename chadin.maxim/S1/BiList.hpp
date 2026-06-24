@@ -3,216 +3,106 @@
 
 #include <stdexcept>
 #include <utility>
-#include <cstddef>
-#include "Node.hpp"
-#include "LIter.hpp"
-#include "LCIter.hpp"
+#include <iterator>
 
-namespace chadin
-{
-  template< class T >
-  class BiList
-  {
-  public:
-    BiList() noexcept : head_(nullptr), size_(0) {}
+namespace chadin {
+    template<typename T>
+    struct Node {
+        T val;
+        Node *prev, *next;
+        Node(const T& v) : val(v), prev(nullptr), next(nullptr) {}
+    };
 
-    BiList(const BiList& other) : head_(nullptr), size_(0)
-    {
-      if (!other.isEmpty())
-      {
-        Node< T >* curr = other.head_;
-        do
-        {
-          pushBack(curr->val);
-          curr = curr->next;
+    template<typename T> class BiList;
+
+    template<typename T>
+    class LIter : public std::iterator<std::bidirectional_iterator_tag, T> {
+        Node<T>* node_;
+        Node<T>* head_;
+        friend class BiList<T>;
+        LIter(Node<T>* n, Node<T>* h) : node_(n), head_(h) {}
+    public:
+        LIter() : node_(nullptr), head_(nullptr) {}
+        T& operator*() const { return node_->val; }
+        LIter& operator++() {
+            node_ = node_->next;
+            if (node_ == head_) node_ = nullptr;
+            return *this;
         }
-        while (curr != other.head_);
-      }
-    }
+        LIter& operator--() {
+            if (node_ == nullptr) node_ = head_->prev;
+            else node_ = node_->prev;
+            return *this;
+        }
+        bool operator==(const LIter& o) const { return node_ == o.node_; }
+        bool operator!=(const LIter& o) const { return node_ != o.node_; }
+    };
 
-    BiList(BiList&& other) noexcept : head_(other.head_), size_(other.size_)
-    {
-      other.head_ = nullptr;
-      other.size_ = 0;
-    }
+    template<typename T>
+    class LCIter : public std::iterator<std::bidirectional_iterator_tag, const T> {
+        const Node<T>* node_;
+        const Node<T>* head_;
+        friend class BiList<T>;
+        LCIter(const Node<T>* n, const Node<T>* h) : node_(n), head_(h) {}
+    public:
+        LCIter() : node_(nullptr), head_(nullptr) {}
+        const T& operator*() const { return node_->val; }
+        LCIter& operator++() {
+            node_ = node_->next;
+            if (node_ == head_) node_ = nullptr;
+            return *this;
+        }
+        LCIter& operator--() {
+            if (node_ == nullptr) node_ = head_->prev;
+            else node_ = node_->prev;
+            return *this;
+        }
+        bool operator==(const LCIter& o) const { return node_ == o.node_; }
+        bool operator!=(const LCIter& o) const { return node_ != o.node_; }
+    };
 
-    ~BiList() noexcept
-    {
-      clear();
-    }
+    template<typename T>
+    class BiList {
+        Node<T>* head_ = nullptr;
+        size_t size_ = 0;
+    public:
+        BiList() = default;
+        ~BiList() { clear(); }
 
-    BiList& operator=(const BiList& other)
-    {
-      if (this != &other)
-      {
-        BiList tmp(other);
-        swap(tmp);
-      }
-      return *this;
-    }
+        void pushBack(const T& val) {
+            Node<T>* newNode = new Node<T>(val);
+            if (!head_) {
+                newNode->next = newNode->prev = newNode;
+                head_ = newNode;
+            } else {
+                Node<T>* tail = head_->prev;
+                newNode->next = head_;
+                newNode->prev = tail;
+                tail->next = head_->prev = newNode;
+            }
+            size_++;
+        }
 
-    BiList& operator=(BiList&& other) noexcept
-    {
-      if (this != &other)
-      {
-        clear();
-        head_ = other.head_;
-        size_ = other.size_;
-        other.head_ = nullptr;
-        other.size_ = 0;
-      }
-      return *this;
-    }
+        void clear() { while(size_) popFront(); }
+        void popFront() {
+            if (!head_) return;
+            Node<T>* old = head_;
+            if (size_ == 1) head_ = nullptr;
+            else {
+                head_->prev->next = head_->next;
+                head_->next->prev = head_->prev;
+                head_ = head_->next;
+            }
+            delete old;
+            size_--;
+        }
 
-    void swap(BiList& other) noexcept
-    {
-      std::swap(head_, other.head_);
-      std::swap(size_, other.size_);
-    }
-
-    bool isEmpty() const noexcept
-    {
-      return size_ == 0;
-    }
-
-    size_t getSize() const noexcept
-    {
-      return size_;
-    }
-
-    T& front()
-    {
-      if (isEmpty()) throw std::out_of_range("List is empty");
-      return head_->val;
-    }
-
-    const T& front() const
-    {
-      if (isEmpty()) throw std::out_of_range("List is empty");
-      return head_->val;
-    }
-
-    T& back()
-    {
-      if (isEmpty()) throw std::out_of_range("List is empty");
-      return head_->prev->val;
-    }
-
-    const T& back() const
-    {
-      if (isEmpty()) throw std::out_of_range("List is empty");
-      return head_->prev->val;
-    }
-
-    LIter< T > begin() noexcept
-    {
-      return LIter< T >(head_, head_);
-    }
-
-    LIter< T > end() noexcept
-    {
-      return LIter< T >(nullptr, head_);
-    }
-
-    LCIter< T > cbegin() const noexcept
-    {
-      return LCIter< T >(head_, head_);
-    }
-
-    LCIter< T > cend() const noexcept
-    {
-      return LCIter< T >(nullptr, head_);
-    }
-
-    void pushFront(const T& value)
-    {
-      Node< T >* newNode = new Node< T >(value);
-      if (isEmpty())
-      {
-        newNode->next = newNode;
-        newNode->prev = newNode;
-        head_ = newNode;
-      }
-      else
-      {
-        Node< T >* tail = head_->prev;
-        newNode->next = head_;
-        newNode->prev = tail;
-        tail->next = newNode;
-        head_->prev = newNode;
-        head_ = newNode;
-      }
-      ++size_;
-    }
-
-    void pushFront(T&& value)
-    {
-      Node< T >* newNode = new Node< T >(std::move(value));
-      if (isEmpty())
-      {
-        newNode->next = newNode;
-        newNode->prev = newNode;
-        head_ = newNode;
-      }
-      else
-      {
-        Node< T >* tail = head_->prev;
-        newNode->next = head_;
-        newNode->prev = tail;
-        tail->next = newNode;
-        head_->prev = newNode;
-        head_ = newNode;
-      }
-      ++size_;
-    }
-
-    void pushBack(const T& value)
-    {
-      pushFront(value);
-      head_ = head_->next;
-    }
-
-    void pushBack(T&& value)
-    {
-      pushFront(std::move(value));
-      head_ = head_->next;
-    }
-
-    void popFront() noexcept
-    {
-      if (isEmpty())
-      {
-        return;
-      }
-      if (size_ == 1)
-      {
-        delete head_;
-        head_ = nullptr;
-      }
-      else
-      {
-        Node< T >* oldHead = head_;
-        Node< T >* tail = head_->prev;
-        head_ = head_->next;
-        head_->prev = tail;
-        tail->next = head_;
-        delete oldHead;
-      }
-      --size_;
-    }
-
-    void clear() noexcept
-    {
-      while (!isEmpty())
-      {
-        popFront();
-      }
-    }
-
-  private:
-    Node< T >* head_;
-    size_t size_;
-  };
+        LIter<T> begin() { return LIter<T>(head_, head_); }
+        LIter<T> end() { return LIter<T>(nullptr, head_); }
+        LCIter<T> cbegin() const { return LCIter<T>(head_, head_); }
+        LCIter<T> cend() const { return LCIter<T>(nullptr, head_); }
+        bool isEmpty() const { return size_ == 0; }
+        size_t getSize() const { return size_; }
+    };
 }
-
 #endif
