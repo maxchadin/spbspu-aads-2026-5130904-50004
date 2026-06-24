@@ -6,6 +6,7 @@
 int main()
 {
   using namespace chadin;
+
   try
   {
     BiList< std::pair< std::string, BiList< unsigned long long > > > data;
