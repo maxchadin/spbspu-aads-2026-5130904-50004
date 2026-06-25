@@ -179,3 +179,69 @@ namespace chadin {
       edges.drop(edgeKey);
     }
   }
+
+  void executeCreate(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  {
+    std::string graphName;
+    size_t countK;
+    in >> graphName >> countK;
+    Vector< std::string > newVerts;
+
+    for (size_t i = 0; i < countK; ++i) {
+      std::string v;
+      in >> v;
+      newVerts.pushBack(v);
+    }
+
+    if (allGraphs.has(graphName)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+
+    Graph g;
+    for (size_t i = 0; i < newVerts.size(); ++i) {
+      g.addVertex(newVerts[i]);
+    }
+    allGraphs.add(graphName, g);
+  }
+
+  void executeMerge(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  {
+    std::string newGraph, oldG1, oldG2;
+    in >> newGraph >> oldG1 >> oldG2;
+
+    if (allGraphs.has(newGraph) || !allGraphs.has(oldG1) || !allGraphs.has(oldG2)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+
+    Graph g;
+    Graph& g1 = allGraphs.get(oldG1);
+    Graph& g2 = allGraphs.get(oldG2);
+
+    const auto& verts1 = g1.getVertexes();
+    for (size_t i = 0; i < verts1.size(); ++i) {
+      g.addVertex(verts1[i]);
+    }
+    const auto& verts2 = g2.getVertexes();
+    for (size_t i = 0; i < verts2.size(); ++i) {
+      g.addVertex(verts2[i]);
+    }
+
+    auto& edges1 = g1.getEdges();
+    for (auto it = edges1.begin(); it != edges1.end(); ++it) {
+      const auto& w = *it;
+      for (size_t i = 0; i < w.size(); ++i) {
+        g.addEdge(it.getKey().first, it.getKey().second, w[i]);
+      }
+    }
+
+    auto& edges2 = g2.getEdges();
+    for (auto it = edges2.begin(); it != edges2.end(); ++it) {
+      const auto& w = *it;
+      for (size_t i = 0; i < w.size(); ++i) {
+        g.addEdge(it.getKey().first, it.getKey().second, w[i]);
+      }
+    }
+    allGraphs.add(newGraph, g);
+  }
