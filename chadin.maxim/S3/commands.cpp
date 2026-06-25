@@ -129,3 +129,53 @@ namespace chadin {
       out << '\n';
     }
   }
+
+  void executeBind(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  {
+    std::string graphName, v1, v2;
+    unsigned int weight;
+    in >> graphName >> v1 >> v2 >> weight;
+    if (!allGraphs.has(graphName)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+    allGraphs.get(graphName).addEdge(v1, v2, weight);
+  }
+
+  void executeCut(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  {
+    std::string graphName, v1, v2;
+    unsigned int weight;
+    in >> graphName >> v1 >> v2 >> weight;
+    if (!allGraphs.has(graphName)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+
+    Graph& g = allGraphs.get(graphName);
+    std::pair< std::string, std::string > edgeKey(v1, v2);
+    auto& edges = g.getEdges();
+
+    if (!edges.has(edgeKey)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+
+    Vector< unsigned int >& weights = edges.get(edgeKey);
+    bool weightFound = false;
+    for (size_t i = 0; i < weights.size(); ++i) {
+      if (weights[i] == weight) {
+        weights.erase(i);
+        weightFound = true;
+        break;
+      }
+    }
+
+    if (!weightFound) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+    if (weights.size() == 0) {
+      edges.drop(edgeKey);
+    }
+  }
