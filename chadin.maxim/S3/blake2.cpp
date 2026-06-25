@@ -25,3 +25,11 @@ namespace chadin {
     }
     return finalHash;
   }
+
+  size_t PairBlake2sHash::operator()(const std::pair< std::string, std::string >& p) const
+  {
+    Blake2sHash hasher;
+    size_t h1 = hasher(p.first);
+    size_t h2 = hasher(p.second);
+    return h1 ^ (h2 << 1);
+  }
