@@ -140,3 +140,127 @@ namespace chadin {
     size_(0),
     table_(new Slot< Key, Value >[totalSlots_])
   {}
+
+  template< class Key, class Value, class Hash, class Equal >
+  HashTable< Key, Value, Hash, Equal >::HashTable(const HashTable& other):
+    numBuckets_(other.numBuckets_),
+    bucketSize_(other.bucketSize_),
+    totalSlots_(other.totalSlots_),
+    size_(other.size_),
+    table_(new Slot< Key, Value >[other.totalSlots_]),
+    hasher_(other.hasher_),
+    equals_(other.equals_)
+  {
+    for (size_t i = 0; i < totalSlots_; ++i) {
+      if (other.table_[i].isOccupied_) {
+        table_[i].isOccupied_ = true;
+        table_[i].key_ = other.table_[i].key_;
+        table_[i].value_ = other.table_[i].value_;
+      }
+    }
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  HashTable< Key, Value, Hash, Equal >::~HashTable()
+  {
+    delete[] table_;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  void HashTable< Key, Value, Hash, Equal >::swap(HashTable& other) noexcept
+  {
+    std::swap(numBuckets_, other.numBuckets_);
+    std::swap(bucketSize_, other.bucketSize_);
+    std::swap(totalSlots_, other.totalSlots_);
+    std::swap(size_, other.size_);
+    std::swap(table_, other.table_);
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  HashTable< Key, Value, Hash, Equal >& HashTable< Key, Value, Hash, Equal >::operator=(HashTable other)
+  {
+    swap(other);
+    return *this;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  void HashTable< Key, Value, Hash, Equal >::add(const Key& k, const Value& v)
+  {
+    if (has(k)) {
+      get(k) = v;
+      return;
+    }
+
+    size_t targetBucket = hasher_(k) % numBuckets_;
+    size_t startIdx = targetBucket * bucketSize_;
+
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (!table_[startIdx + i].isOccupied_) {
+        table_[startIdx + i].isOccupied_ = true;
+        table_[startIdx + i].key_ = k;
+        table_[startIdx + i].value_ = v;
+        size_++;
+        return;
+      }
+    }
+
+    size_t spareStartIdx = numBuckets_ * bucketSize_;
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (!table_[spareStartIdx + i].isOccupied_) {
+        table_[spareStartIdx + i].isOccupied_ = true;
+        table_[spareStartIdx + i].key_ = k;
+        table_[spareStartIdx + i].value_ = v;
+        size_++;
+        return;
+      }
+    }
+
+    throw std::overflow_error("HashTable overflow: buckets and spare bucket are full.");
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  Value HashTable< Key, Value, Hash, Equal >::drop(const Key& k)
+  {
+    size_t targetBucket = hasher_(k) % numBuckets_;
+    size_t startIdx = targetBucket * bucketSize_;
+
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (table_[startIdx + i].isOccupied_ && equals_(table_[startIdx + i].key_, k)) {
+        table_[startIdx + i].isOccupied_ = false;
+        size_--;
+        return table_[startIdx + i].value_;
+      }
+    }
+
+    size_t spareStartIdx = numBuckets_ * bucketSize_;
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (table_[spareStartIdx + i].isOccupied_ && equals_(table_[spareStartIdx + i].key_, k)) {
+        table_[spareStartIdx + i].isOccupied_ = false;
+        size_--;
+        return table_[spareStartIdx + i].value_;
+      }
+    }
+
+    throw std::invalid_argument("Key not found");
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  bool HashTable< Key, Value, Hash, Equal >::has(const Key& k) const
+  {
+    size_t targetBucket = hasher_(k) % numBuckets_;
+    size_t startIdx = targetBucket * bucketSize_;
+
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (table_[startIdx + i].isOccupied_ && equals_(table_[startIdx + i].key_, k)) {
+        return true;
+      }
+    }
+
+    size_t spareStartIdx = numBuckets_ * bucketSize_;
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (table_[spareStartIdx + i].isOccupied_ && equals_(table_[spareStartIdx + i].key_, k)) {
+        return true;
+      }
+    }
+    return false;
+  }
