@@ -31,8 +31,7 @@ namespace chadin {
     return vertexes_;
   }
 
-  HashTable< std::pair< std::string, std::string >, Vector< unsigned int >,
-             PairBlake2sHash, PairEqual >& Graph::getEdges()
+  HashTable< std::pair< std::string, std::string >, Vector< unsigned int >, PairBlake2sHash, PairEqual >& Graph::getEdges()
   {
     return edges_;
   }
