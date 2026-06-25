@@ -264,3 +264,57 @@ namespace chadin {
     }
     return false;
   }
+
+  template< class Key, class Value, class Hash, class Equal >
+  Value& HashTable< Key, Value, Hash, Equal >::get(const Key& k)
+  {
+    size_t targetBucket = hasher_(k) % numBuckets_;
+    size_t startIdx = targetBucket * bucketSize_;
+
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (table_[startIdx + i].isOccupied_ && equals_(table_[startIdx + i].key_, k)) {
+        return table_[startIdx + i].value_;
+      }
+    }
+
+    size_t spareStartIdx = numBuckets_ * bucketSize_;
+    for (size_t i = 0; i < bucketSize_; ++i) {
+      if (table_[spareStartIdx + i].isOccupied_ && equals_(table_[spareStartIdx + i].key_, k)) {
+        return table_[spareStartIdx + i].value_;
+      }
+    }
+    throw std::invalid_argument("Key not found");
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  const Value& HashTable< Key, Value, Hash, Equal >::get(const Key& k) const
+  {
+    return const_cast< HashTable* >(this)->get(k);
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  void HashTable< Key, Value, Hash, Equal >::rehash(size_t slots)
+  {
+    HashTable newTable(slots, bucketSize_);
+    for (size_t i = 0; i < totalSlots_; ++i) {
+      if (table_[i].isOccupied_) {
+        newTable.add(table_[i].key_, table_[i].value_);
+      }
+    }
+    swap(newTable);
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::Iterator HashTable< Key, Value, Hash, Equal >::begin()
+  {
+    return Iterator(table_, totalSlots_, 0);
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::Iterator HashTable< Key, Value, Hash, Equal >::end()
+  {
+    return Iterator(table_, totalSlots_, totalSlots_);
+  }
+}
+
+#endif
