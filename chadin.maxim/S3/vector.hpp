@@ -87,3 +87,65 @@ namespace chadin {
     data_[size_] = value;
     size_ = size_ + 1;
   }
+
+  template< class T >
+  void Vector< T >::erase(size_t index)
+  {
+    if (index < size_) {
+      for (size_t i = index; i < size_ - 1; ++i) {
+        data_[i] = data_[i + 1];
+      }
+      size_ = size_ - 1;
+    }
+  }
+
+  template< class T >
+  size_t Vector< T >::size() const
+  {
+    return size_;
+  }
+
+  template< class T >
+  void Vector< T >::clear()
+  {
+    size_ = 0;
+  }
+
+  template< class T >
+  T& Vector< T >::operator[](size_t index)
+  {
+    return data_[index];
+  }
+
+  template< class T >
+  const T& Vector< T >::operator[](size_t index) const
+  {
+    return data_[index];
+  }
+
+  template< class T >
+  T* Vector< T >::begin()
+  {
+    return data_;
+  }
+
+  template< class T >
+  T* Vector< T >::end()
+  {
+    return data_ + size_;
+  }
+
+  template< class T >
+  const T* Vector< T >::begin() const
+  {
+    return data_;
+  }
+
+  template< class T >
+  const T* Vector< T >::end() const
+  {
+    return data_ + size_;
+  }
+}
+
+#endif
