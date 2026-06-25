@@ -45,3 +45,87 @@ namespace chadin {
       out << verts[i] << '\n';
     }
   }
+
+  void printOutbound(GraphTable& allGraphs, const std::string& graphName, const std::string& vertexName, std::ostream& out)
+  {
+    if (!allGraphs.has(graphName)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+    Graph& g = allGraphs.get(graphName);
+    const Vector< std::string >& verts = g.getVertexes();
+    bool hasVertex = false;
+    for (size_t i = 0; i < verts.size(); ++i) {
+      if (verts[i] == vertexName) {
+        hasVertex = true;
+        break;
+      }
+    }
+    if (!hasVertex) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+
+    auto& edges = g.getEdges();
+    Vector< std::string > destinations;
+    for (auto it = edges.begin(); it != edges.end(); ++it) {
+      std::pair< std::string, std::string > key = it.getKey();
+      if (key.first == vertexName) {
+        destinations.pushBack(key.second);
+      }
+    }
+    sortAscending(destinations);
+
+    for (size_t i = 0; i < destinations.size(); ++i) {
+      out << destinations[i];
+      std::pair< std::string, std::string > edgeKey(vertexName, destinations[i]);
+      Vector< unsigned int > weights = edges.get(edgeKey);
+      sortAscending(weights);
+      for (size_t j = 0; j < weights.size(); ++j) {
+        out << " " << weights[j];
+      }
+      out << '\n';
+    }
+  }
+
+  void printInbound(GraphTable& allGraphs, const std::string& graphName, const std::string& vertexName, std::ostream& out)
+  {
+    if (!allGraphs.has(graphName)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+    Graph& g = allGraphs.get(graphName);
+    const Vector< std::string >& verts = g.getVertexes();
+    bool hasVertex = false;
+    for (size_t i = 0; i < verts.size(); ++i) {
+      if (verts[i] == vertexName) {
+        hasVertex = true;
+        break;
+      }
+    }
+    if (!hasVertex) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+
+    auto& edges = g.getEdges();
+    Vector< std::string > origins;
+    for (auto it = edges.begin(); it != edges.end(); ++it) {
+      std::pair< std::string, std::string > key = it.getKey();
+      if (key.second == vertexName) {
+        origins.pushBack(key.first);
+      }
+    }
+    sortAscending(origins);
+
+    for (size_t i = 0; i < origins.size(); ++i) {
+      out << origins[i];
+      std::pair< std::string, std::string > edgeKey(origins[i], vertexName);
+      Vector< unsigned int > weights = edges.get(edgeKey);
+      sortAscending(weights);
+      for (size_t j = 0; j < weights.size(); ++j) {
+        out << " " << weights[j];
+      }
+      out << '\n';
+    }
+  }
