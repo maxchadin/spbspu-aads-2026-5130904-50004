@@ -18,3 +18,30 @@ namespace {
     }
   }
 }
+
+namespace chadin {
+  void printGraphs(GraphTable& allGraphs, std::ostream& out)
+  {
+    Vector< std::string > names;
+    for (auto it = allGraphs.begin(); it != allGraphs.end(); ++it) {
+      names.pushBack(it.getKey());
+    }
+    sortAscending(names);
+    for (size_t i = 0; i < names.size(); ++i) {
+      out << names[i] << '\n';
+    }
+  }
+
+  void printVertexes(GraphTable& allGraphs, const std::string& graphName, std::ostream& out)
+  {
+    if (!allGraphs.has(graphName)) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+    Graph& g = allGraphs.get(graphName);
+    Vector< std::string > verts = g.getVertexes();
+    sortAscending(verts);
+    for (size_t i = 0; i < verts.size(); ++i) {
+      out << verts[i] << '\n';
+    }
+  }
