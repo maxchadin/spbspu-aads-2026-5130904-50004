@@ -8,10 +8,22 @@ namespace chadin
   class Queue
   {
   public:
-    void push(const T & val) { data_.pushBack(val); }
-    void pop() { data_.popFront(); }
-    T & front() { return data_.getFront(); }
-    bool isEmpty() const { return data_.isEmpty(); }
+    void push(const T & val)
+    {
+      data_.pushBack(val);
+    }
+    void pop()
+    {
+      data_.popFront();
+    }
+    T & front()
+    {
+      return data_.getFront();
+    }
+    bool isEmpty() const
+    {
+      return data_.isEmpty();
+    }
   private:
     List< T > data_;
   };

@@ -8,10 +8,22 @@ namespace chadin
   class Stack
   {
   public:
-    void push(const T & val) { data_.pushBack(val); }
-    void pop() { data_.popBack(); }
-    T & top() { return data_.getBack(); }
-    bool isEmpty() const { return data_.isEmpty(); }
+    void push(const T & val)
+    {
+      data_.pushBack(val);
+    }
+    void pop()
+    {
+      data_.popBack();
+    }
+    T & top()
+    {
+      return data_.getBack();
+    }
+    bool isEmpty() const
+    {
+      return data_.isEmpty();
+    }
   private:
     List< T > data_;
   };
