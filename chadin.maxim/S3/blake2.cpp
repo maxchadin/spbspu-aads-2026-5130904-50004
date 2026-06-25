@@ -33,3 +33,8 @@ namespace chadin {
     size_t h2 = hasher(p.second);
     return h1 ^ (h2 << 1);
   }
+
+  bool StringEqual::operator()(const std::string& a, const std::string& b) const
+  {
+    return a == b;
+  }
