@@ -38,3 +38,10 @@ namespace chadin {
   {
     return a == b;
   }
+
+  bool PairEqual::operator()(const std::pair< std::string, std::string >& a, 
+                             const std::pair< std::string, std::string >& b) const
+  {
+    return (a.first == b.first) && (a.second == b.second);
+  }
+}
