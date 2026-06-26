@@ -198,3 +198,98 @@ public:
   {
     clear();
   }
+
+  void push(Key k, Value v)
+  {
+    NodeBase* curr = fakeRoot_.left;
+    NodeBase* parent = &fakeRoot_;
+    bool isLeft = true;
+
+    while (!isFakeLeaf(curr)) {
+      auto* n = static_cast<Node<Key, Value>*>(curr);
+      if (comp_(k, n->data.first)) {
+        parent = curr;
+        curr = curr->left;
+        isLeft = true;
+      } else if (comp_(n->data.first, k)) {
+        parent = curr;
+        curr = curr->right;
+        isLeft = false;
+      } else {
+        n->data.second = v;
+        return;
+      }
+    }
+
+    auto* newNode = new Node<Key, Value>(k, v);
+    newNode->left = &fakeLeaf_;
+    newNode->right = &fakeLeaf_;
+    newNode->parent = parent;
+
+    if (isFakeRoot(parent) || isLeft) {
+      parent->left = newNode;
+    } else {
+      parent->right = newNode;
+    }
+    size_++;
+  }
+
+  Value get(Key k) const
+  {
+    NodeBase* node = findNode(k);
+    if (isFakeLeaf(node)) {
+      throw std::out_of_range("Key not found");
+    }
+    return static_cast<Node<Key, Value>*>(node)->data.second;
+  }
+
+  bool has(Key k) const
+  {
+    return !isFakeLeaf(findNode(k));
+  }
+
+  Value drop(Key k)
+  {
+    NodeBase* nodeT = findNode(k);
+    if (isFakeLeaf(nodeT)) {
+      throw std::out_of_range("Key not found");
+    }
+
+    Value droppedVal = static_cast<Node<Key, Value>*>(nodeT)->data.second;
+
+    if (isFakeLeaf(nodeT->left) && isFakeLeaf(nodeT->right)) {
+      replaceChild(nodeT, &fakeLeaf_);
+    } else if (isFakeLeaf(nodeT->left)) {
+      replaceChild(nodeT, nodeT->right);
+    } else if (isFakeLeaf(nodeT->right)) {
+      replaceChild(nodeT, nodeT->left);
+    } else {
+      NodeBase* minRight = nodeT->right;
+      while (!isFakeLeaf(minRight->left)) {
+        minRight = minRight->left;
+      }
+
+      replaceChild(minRight, minRight->right);
+
+      minRight->parent = nodeT->parent;
+      if (nodeT->parent->left == nodeT) {
+        nodeT->parent->left = minRight;
+      } else {
+        nodeT->parent->right = minRight;
+      }
+
+      minRight->left = nodeT->left;
+      if (!isFakeLeaf(minRight->left)) {
+        minRight->left->parent = minRight;
+      }
+
+      minRight->right = nodeT->right;
+      if (!isFakeLeaf(minRight->right)) {
+        minRight->right->parent = minRight;
+      }
+    }
+
+    delete static_cast<Node<Key, Value>*>(nodeT);
+    size_--;
+    return droppedVal;
+  }
