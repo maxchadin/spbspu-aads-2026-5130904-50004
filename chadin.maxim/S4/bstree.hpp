@@ -146,3 +146,55 @@ public:
 
   NodeBase* node_;
 };
+
+template <class Key, class Value, class Compare = std::less<Key>>
+class BSTree {
+public:
+  using iterator = BSTIterator<Key, Value>;
+  using const_iterator = BSTConstIterator<Key, Value>;
+
+  BSTree():
+    size_(0)
+  {
+    fakeLeaf_.left = &fakeLeaf_;
+    fakeLeaf_.right = &fakeLeaf_;
+    fakeLeaf_.parent = &fakeLeaf_;
+
+    fakeRoot_.parent = &fakeRoot_;
+    fakeRoot_.left = &fakeLeaf_;
+    fakeRoot_.right = &fakeLeaf_;
+  }
+
+  BSTree(const BSTree& other):
+    BSTree()
+  {
+    for (auto it = other.cbegin(); it != other.cend(); ++it) {
+      push(it->first, it->second);
+    }
+  }
+
+  BSTree(BSTree&& other) noexcept :
+    BSTree()
+  {
+    swap(other);
+  }
+
+  BSTree& operator=(const BSTree& other)
+  {
+    if (this != &other) {
+      BSTree tmp(other);
+      swap(tmp);
+    }
+    return *this;
+  }
+
+  BSTree& operator=(BSTree&& other) noexcept
+  {
+    swap(other);
+    return *this;
+  }
+
+  ~BSTree()
+  {
+    clear();
+  }
