@@ -74,3 +74,75 @@ public:
 
   NodeBase* node_;
 };
+
+template <class Key, class Value>
+class BSTConstIterator {
+public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = const std::pair<const Key, Value>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = value_type*;
+  using reference = value_type&;
+
+  BSTConstIterator():
+    node_(nullptr)
+  {
+  }
+
+  explicit BSTConstIterator(NodeBase* node):
+    node_(node)
+  {
+  }
+
+  BSTConstIterator(const BSTIterator<Key, Value>& it):
+    node_(it.node_)
+  {
+  }
+
+  reference operator*() const
+  {
+    return static_cast<Node<Key, Value>*>(node_)->data;
+  }
+
+  pointer operator->() const
+  {
+    return &(static_cast<Node<Key, Value>*>(node_)->data);
+  }
+
+  BSTConstIterator& operator++()
+  {
+    if (node_->right->left != node_->right) {
+      node_ = node_->right;
+      while (node_->left->left != node_->left) {
+        node_ = node_->left;
+      }
+    } else {
+      NodeBase* p = node_->parent;
+      while (p->parent != p && node_ == p->right) {
+        node_ = p;
+        p = p->parent;
+      }
+      node_ = p;
+    }
+    return *this;
+  }
+
+  BSTConstIterator operator++(int)
+  {
+    BSTConstIterator tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  bool operator==(const BSTConstIterator& other) const
+  {
+    return node_ == other.node_;
+  }
+
+  bool operator!=(const BSTConstIterator& other) const
+  {
+    return node_ != other.node_;
+  }
+
+  NodeBase* node_;
+};
