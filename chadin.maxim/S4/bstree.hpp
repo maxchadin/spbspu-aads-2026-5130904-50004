@@ -293,3 +293,67 @@ public:
     size_--;
     return droppedVal;
   }
+
+  const_iterator rotateLeft(const_iterator it)
+  {
+    NodeBase* x = it.node_;
+    NodeBase* p = x->parent;
+    if (isFakeRoot(p) || p->right != x) {
+      return it;
+    }
+
+    NodeBase* g = p->parent;
+    p->right = x->left;
+    if (!isFakeLeaf(x->left)) {
+      x->left->parent = p;
+    }
+
+    x->left = p;
+    p->parent = x;
+    x->parent = g;
+
+    if (g->left == p) {
+      g->left = x;
+    } else {
+      g->right = x;
+    }
+    return it;
+  }
+
+  const_iterator rotateRight(const_iterator it)
+  {
+    NodeBase* x = it.node_;
+    NodeBase* p = x->parent;
+    if (isFakeRoot(p) || p->left != x) {
+      return it;
+    }
+
+    NodeBase* g = p->parent;
+    p->left = x->right;
+    if (!isFakeLeaf(x->right)) {
+      x->right->parent = p;
+    }
+
+    x->right = p;
+    p->parent = x;
+    x->parent = g;
+
+    if (g->left == p) {
+      g->left = x;
+    } else {
+      g->right = x;
+    }
+    return it;
+  }
+
+  const_iterator rotateLargeLeft(const_iterator it)
+  {
+    const_iterator step1 = rotateRight(it);
+    return rotateLeft(step1);
+  }
+
+  const_iterator rotateLargeRight(const_iterator it)
+  {
+    const_iterator step1 = rotateLeft(it);
+    return rotateRight(step1);
+  }
