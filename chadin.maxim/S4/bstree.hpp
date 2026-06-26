@@ -436,3 +436,94 @@ public:
   {
     return const_iterator(const_cast<NodeBase*>(&fakeRoot_));
   }
+
+  private:
+  bool isFakeLeaf(const NodeBase* n) const
+  {
+    return n == &fakeLeaf_;
+  }
+
+  bool isFakeRoot(const NodeBase* n) const
+  {
+    return n == &fakeRoot_;
+  }
+
+  NodeBase* findNode(Key k) const
+  {
+    NodeBase* curr = fakeRoot_.left;
+    while (!isFakeLeaf(curr)) {
+      auto* n = static_cast<Node<Key, Value>*>(curr);
+      if (comp_(k, n->data.first)) {
+        curr = curr->left;
+      } else if (comp_(n->data.first, k)) {
+        curr = curr->right;
+      } else {
+        return curr;
+      }
+    }
+    return const_cast<NodeBase*>(&fakeLeaf_);
+  }
+
+  void replaceChild(NodeBase* oldNode, NodeBase* newNode)
+  {
+    if (oldNode->parent->left == oldNode) {
+      oldNode->parent->left = newNode;
+    } else {
+      oldNode->parent->right = newNode;
+    }
+    if (!isFakeLeaf(newNode)) {
+      newNode->parent = oldNode->parent;
+    }
+  }
+
+  void clear()
+  {
+    clearNode(fakeRoot_.left);
+    fakeRoot_.left = &fakeLeaf_;
+    size_ = 0;
+  }
+
+  void clearNode(NodeBase* n)
+  {
+    if (isFakeLeaf(n)) {
+      return;
+    }
+    clearNode(n->left);
+    clearNode(n->right);
+    delete static_cast<Node<Key, Value>*>(n);
+  }
+
+  size_t calcHeight(NodeBase* n) const
+  {
+    if (isFakeLeaf(n)) {
+      return 0;
+    }
+    return 1 + std::max(calcHeight(n->left), calcHeight(n->right));
+  }
+
+  void updateFakeLeafPointers(NodeBase* n, NodeBase* oldLeaf, NodeBase* newLeaf)
+  {
+    if (n == newLeaf || n == oldLeaf) {
+      return;
+    }
+    if (n->left == oldLeaf) {
+      n->left = newLeaf;
+    } else {
+      updateFakeLeafPointers(n->left, oldLeaf, newLeaf);
+    }
+    if (n->right == oldLeaf) {
+      n->right = newLeaf;
+    } else {
+      updateFakeLeafPointers(n->right, oldLeaf, newLeaf);
+    }
+  }
+
+  NodeBase fakeLeaf_;
+  NodeBase fakeRoot_;
+  Compare comp_;
+  size_t size_;
+};
+
+}
+
+#endif
