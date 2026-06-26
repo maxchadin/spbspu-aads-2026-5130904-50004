@@ -357,3 +357,82 @@ public:
     const_iterator step1 = rotateLeft(it);
     return rotateRight(step1);
   }
+
+  size_t height(const_iterator it) const
+  {
+    return calcHeight(it.node_);
+  }
+
+  size_t height() const
+  {
+    return calcHeight(fakeRoot_.left);
+  }
+
+  bool empty() const
+  {
+    return size_ == 0;
+  }
+
+  size_t size() const
+  {
+    return size_;
+  }
+
+  void swap(BSTree& other) noexcept
+  {
+    std::swap(size_, other.size_);
+
+    NodeBase* thisRoot = fakeRoot_.left;
+    NodeBase* otherRoot = other.fakeRoot_.left;
+
+    if (!isFakeLeaf(thisRoot)) {
+      thisRoot->parent = &other.fakeRoot_;
+      other.fakeRoot_.left = thisRoot;
+    } else {
+      other.fakeRoot_.left = &other.fakeLeaf_;
+    }
+
+    if (!other.isFakeLeaf(otherRoot)) {
+      otherRoot->parent = &fakeRoot_;
+      fakeRoot_.left = otherRoot;
+    } else {
+      fakeRoot_.left = &fakeLeaf_;
+    }
+
+    updateFakeLeafPointers(fakeRoot_.left, &other.fakeLeaf_, &fakeLeaf_);
+    updateFakeLeafPointers(other.fakeRoot_.left, &fakeLeaf_, &other.fakeLeaf_);
+  }
+
+  iterator begin()
+  {
+    NodeBase* n = fakeRoot_.left;
+    if (isFakeLeaf(n)) {
+      return iterator(&fakeRoot_);
+    }
+    while (!isFakeLeaf(n->left)) {
+      n = n->left;
+    }
+    return iterator(n);
+  }
+
+  iterator end()
+  {
+    return iterator(&fakeRoot_);
+  }
+
+  const_iterator cbegin() const
+  {
+    NodeBase* n = fakeRoot_.left;
+    if (isFakeLeaf(n)) {
+      return const_iterator(const_cast<NodeBase*>(&fakeRoot_));
+    }
+    while (!isFakeLeaf(n->left)) {
+      n = n->left;
+    }
+    return const_iterator(n);
+  }
+
+  const_iterator cend() const
+  {
+    return const_iterator(const_cast<NodeBase*>(&fakeRoot_));
+  }
