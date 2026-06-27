@@ -73,3 +73,50 @@ int chadin::Squad::getPlayerCount() const
   }
   return count;
 }
+
+int chadin::Squad::getPlayerAt(const int slotIndex) const
+{
+  if (slotIndex >= 0 && slotIndex < SQUAD_SIZE) {
+    return positions_[slotIndex];
+  } else {
+    return -1;
+  }
+}
+
+int chadin::Squad::getSlotIndex(const std::string& position) const
+{
+  if (position == "GK"){
+    return 0;
+  }
+  if (position == "LB"){
+    return 1;
+  }
+  if (position == "CB") {
+    if (positions_[2] == -1){
+      return 2;
+    }
+    return 3;
+  }
+  if (position == "RB"){
+    return 4;
+  }
+  if (position == "CDM"){
+    return 5;
+  }
+  if (position == "CM") {
+    if (positions_[6] == -1){
+      return 6;
+    }
+    return 7;
+  }
+  if (position == "LW"){
+    return 8;
+  }
+  if (position == "RW"){
+    return 9;
+  }
+  if (position == "ST"){
+    return 10;
+  }
+  return -1;
+}
