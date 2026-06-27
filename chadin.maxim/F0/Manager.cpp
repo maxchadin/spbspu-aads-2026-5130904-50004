@@ -60,3 +60,97 @@ std::string chadin::Manager::getSquadsForPlayer(const int id) const
   }
   return result;
 }
+
+void chadin::Manager::processCommand(const std::string& cmd)
+{
+  if (cmd == "add-player") cmdAddPlayer();
+  else if (cmd == "remove-player") cmdRemovePlayer();
+  else if (cmd == "find-player") cmdFindPlayer();
+  else if (cmd == "list-players") cmdListPlayers();
+  else if (cmd == "show-table-stats") cmdShowTableStats();
+  else if (cmd == "create-squad") cmdCreateSquad();
+  else if (cmd == "delete-squad") cmdDeleteSquad();
+  else if (cmd == "list-squads") cmdListSquads();
+  else if (cmd == "show-squad") cmdShowSquad();
+  else if (cmd == "add-to-squad") cmdAddToSquad();
+  else if (cmd == "remove-from-squad") cmdRemoveFromSquad();
+  else if (cmd == "clear-squad") cmdClearSquad();
+  else if (cmd == "calc-chemistry") cmdCalcChemistry();
+  else if (cmd == "calc-team-rating") cmdCalcTeamRating();
+  else if (cmd == "predict-match") cmdPredictMatch();
+  else if (cmd == "save-collection") cmdSaveCollection();
+  else if (cmd == "load-collection") cmdLoadCollection();
+  else if (cmd == "save-all-squads") cmdSaveAllSquads();
+  else if (cmd == "load-all-squads") cmdLoadAllSquads();
+  else if (cmd == "help") cmdHelp();
+  else {
+    std::cerr << "<INVALID COMMAND> Unknown command: " << cmd << "\n";
+  }
+}
+
+void chadin::Manager::cmdAddPlayer()
+{
+  int id = 0;
+  int pac = 0;
+  int sho = 0;
+  int pas = 0;
+  int dri = 0;
+  int def = 0;
+  int phy = 0;
+  std::cin >> id;
+  std::string name = readStringToken();
+  std::string nation = readStringToken();
+  std::string league = readStringToken();
+  std::string pos = readStringToken();
+  std::cin >> pac >> sho >> pas >> dri >> def >> phy;
+  Player p(id, name, nation, league, pos, pac, sho, pas, dri, def, phy);
+  if (collection_.addPlayer(p)) {
+    std::cout << "[OK] Player " << id << " (" << name << ") added to club collection.\n";
+  } else {
+    std::cerr << "<INVALID COMMAND> Player with id " << id << " already exists.\n";
+  }
+}
+
+void chadin::Manager::cmdRemovePlayer()
+{
+  int id = 0;
+  std::cin >> id;
+  Player p;
+  if (collection_.findPlayer(id, p)) {
+    collection_.removePlayer(id);
+    std::cout << "[OK] Player " << id << " (" << p.getName() << ") removed from club collection.\n";
+    std::string squadsStr = getSquadsForPlayer(id);
+    if (!squadsStr.empty()) {
+      std::cout << "[INFO] Player was also removed from squads: " << squadsStr << "\n";
+      for (std::pair< const std::string, Squad >& pair : squads_) {
+        pair.second.removePlayer(id);
+      }
+    }
+  } else {
+    std::cerr << "<INVALID COMMAND> Player with id " << id << " not found.\n";
+  }
+}
+
+void chadin::Manager::cmdFindPlayer()
+{
+  int id = 0;
+  std::cin >> id;
+  Player p;
+  if (collection_.findPlayer(id, p)) {
+    std::cout << "[FOUND] ID: " << p.getId() << " | Name: " << p.getName()
+              << " | Nation: " << p.getNation() << " | League: " << p.getLeague()
+              << " | Position: " << p.getPosition() << "\n"
+              << "Pace: " << p.getPace() << " | Shooting: " << p.getShooting()
+              << " | Passing: " << p.getPassing() << " | Dribbling: " << p.getDribbling()
+              << " | Defending: " << p.getDefending() << " | Physical: " << p.getPhysical() << "\n"
+              << "Total rating (avg): " << std::fixed << std::setprecision(1) << p.getRating() << "\n";
+    std::string squadsStr = getSquadsForPlayer(id);
+    if (!squadsStr.empty()) {
+      std::cout << "In squads: " << squadsStr << "\n";
+    } else {
+      std::cout << "In squads: None\n";
+    }
+  } else {
+    std::cerr << "<INVALID COMMAND> Player with id " << id << " not found.\n";
+  }
+}
