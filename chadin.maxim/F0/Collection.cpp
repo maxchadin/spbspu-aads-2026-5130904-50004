@@ -65,3 +65,24 @@ bool chadin::Collection::removePlayer(const int id)
   }
   return false;
 }
+
+bool chadin::Collection::findPlayer(const int id, Player& outPlayer) const
+{
+  int index = hash(id);
+  int dist = 0;
+  while (table_[index].status_ != Status::EMPTY && dist <= capacity_) {
+    if (table_[index].status_ == Status::OCCUPIED && table_[index].player_.getId() == id) {
+      outPlayer = table_[index].player_;
+      return true;
+    }
+    index = (index + 1) % capacity_;
+    dist++;
+  }
+  return false;
+}
+
+bool chadin::Collection::hasPlayer(const int id) const
+{
+  Player dummy;
+  return findPlayer(id, dummy);
+}
