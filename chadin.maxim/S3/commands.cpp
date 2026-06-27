@@ -27,6 +27,10 @@ namespace chadin {
     for (auto it = allGraphs.begin(); it != allGraphs.end(); ++it) {
       names.pushBack(it.getKey());
     }
+    if (names.size() == 0) {
+      out << '\n';
+      return;
+    }
     sortAscending(names);
     for (size_t i = 0; i < names.size(); ++i) {
       out << names[i] << '\n';
@@ -41,6 +45,10 @@ namespace chadin {
     }
     Graph& g = allGraphs.get(graphName);
     Vector< std::string > verts = g.getVertexes();
+    if (verts.size() == 0) {
+      out << '\n';
+      return;
+    }
     sortAscending(verts);
     for (size_t i = 0; i < verts.size(); ++i) {
       out << verts[i] << '\n';
@@ -75,6 +83,10 @@ namespace chadin {
       if (key.first == vertexName) {
         destinations.pushBack(key.second);
       }
+    }
+    if (destinations.size() == 0) {
+      out << '\n';
+      return;
     }
     sortAscending(destinations);
 
@@ -119,6 +131,10 @@ namespace chadin {
         origins.pushBack(key.first);
       }
     }
+    if (origins.size() == 0) {
+      out << '\n';
+      return;
+    }
     sortAscending(origins);
 
     for (size_t i = 0; i < origins.size(); ++i) {
@@ -133,8 +149,9 @@ namespace chadin {
     }
   }
 
-  void executeBind(GraphTable& allGraphs, const std::string& gName, const std::string& v1,
-                   const std::string& v2, unsigned int weight, std::ostream& out)
+  void executeBind(GraphTable& allGraphs, const std::string& gName,
+                   const std::string& v1, const std::string& v2,
+                   unsigned int weight, std::ostream& out)
   {
     if (!allGraphs.has(gName)) {
       out << "<INVALID COMMAND>\n";
@@ -143,8 +160,9 @@ namespace chadin {
     allGraphs.get(gName).addEdge(v1, v2, weight);
   }
 
-  void executeCut(GraphTable& allGraphs, const std::string& gName, const std::string& v1,
-                  const std::string& v2, unsigned int weight, std::ostream& out)
+  void executeCut(GraphTable& allGraphs, const std::string& gName,
+                  const std::string& v1, const std::string& v2,
+                  unsigned int weight, std::ostream& out)
   {
     if (!allGraphs.has(gName)) {
       out << "<INVALID COMMAND>\n";
@@ -152,7 +170,6 @@ namespace chadin {
     }
 
     Graph& g = allGraphs.get(gName);
-
     const auto& verts = g.getVertexes();
     bool hasV1 = false;
     bool hasV2 = false;
@@ -171,7 +188,6 @@ namespace chadin {
 
     std::pair< std::string, std::string > edgeKey(v1, v2);
     auto& edges = g.getEdges();
-
     if (!edges.has(edgeKey)) {
       out << "<INVALID COMMAND>\n";
       return;
@@ -211,7 +227,8 @@ namespace chadin {
   }
 
   void executeMerge(GraphTable& allGraphs, const std::string& newGraph,
-                    const std::string& oldG1, const std::string& oldG2, std::ostream& out)
+                    const std::string& oldG1, const std::string& oldG2,
+                    std::ostream& out)
   {
     if (allGraphs.has(newGraph) || !allGraphs.has(oldG1) || !allGraphs.has(oldG2)) {
       out << "<INVALID COMMAND>\n";
@@ -250,7 +267,8 @@ namespace chadin {
   }
 
   void executeExtract(GraphTable& allGraphs, const std::string& newGraph,
-                      const std::string& oldGraph, const Vector< std::string >& extrVerts, std::ostream& out)
+                      const std::string& oldGraph,
+                      const Vector< std::string >& extrVerts, std::ostream& out)
   {
     if (allGraphs.has(newGraph) || !allGraphs.has(oldGraph)) {
       out << "<INVALID COMMAND>\n";
