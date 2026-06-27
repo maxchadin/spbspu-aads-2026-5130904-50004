@@ -227,3 +227,54 @@ void chadin::Manager::cmdShowSquad()
     std::cerr << "<INVALID COMMAND> Squad \"" << name << "\" not found.\n";
   }
 }
+
+void chadin::Manager::cmdAddToSquad()
+{
+  std::string name = readStringToken();
+  int id = 0;
+  std::cin >> id;
+  std::map< std::string, Squad >::iterator it = squads_.find(name);
+  if (it == squads_.end()) {
+    std::cerr << "<INVALID COMMAND> Squad not found.\n";
+    return;
+  }
+  Player p;
+  if (!collection_.findPlayer(id, p)) {
+    std::cerr << "<INVALID COMMAND> Player not found in collection.\n";
+    return;
+  }
+  if (it->second.addPlayer(id, p.getPosition())) {
+    std::cout << "[OK] Added to squad.\n";
+  } else {
+    std::cerr << "<INVALID COMMAND> Cannot add player (already in or slot full).\n";
+  }
+}
+
+void chadin::Manager::cmdRemoveFromSquad()
+{
+  std::string name = readStringToken();
+  int id = 0;
+  std::cin >> id;
+  std::map< std::string, Squad >::iterator it = squads_.find(name);
+  if (it != squads_.end()) {
+    if (it->second.removePlayer(id)) {
+      std::cout << "[OK] Removed from squad.\n";
+    } else {
+      std::cerr << "<INVALID COMMAND> Player not in squad.\n";
+    }
+  } else {
+    std::cerr << "<INVALID COMMAND> Squad not found.\n";
+  }
+}
+
+void chadin::Manager::cmdClearSquad()
+{
+  std::string name = readStringToken();
+  std::map< std::string, Squad >::iterator it = squads_.find(name);
+  if (it != squads_.end()) {
+    it->second.clear();
+    std::cout << "[OK] Squad cleared.\n";
+  } else {
+    std::cerr << "<INVALID COMMAND> Squad not found.\n";
+  }
+}
