@@ -1,0 +1,529 @@
+#ifndef BSTREE_HPP
+#define BSTREE_HPP
+
+#include <stdexcept>
+#include <iterator>
+#include <algorithm>
+#include "node.hpp"
+
+namespace chadin {
+
+template <class Key, class Value>
+class BSTIterator {
+public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = std::pair<const Key, Value>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = value_type*;
+  using reference = value_type&;
+
+  BSTIterator():
+    node_(nullptr)
+  {
+  }
+
+  explicit BSTIterator(NodeBase* node):
+    node_(node)
+  {
+  }
+
+  reference operator*() const
+  {
+    return static_cast<Node<Key, Value>*>(node_)->data;
+  }
+
+  pointer operator->() const
+  {
+    return &(static_cast<Node<Key, Value>*>(node_)->data);
+  }
+
+  BSTIterator& operator++()
+  {
+    if (node_->right->left != node_->right) {
+      node_ = node_->right;
+      while (node_->left->left != node_->left) {
+        node_ = node_->left;
+      }
+    } else {
+      NodeBase* p = node_->parent;
+      while (p->parent != p && node_ == p->right) {
+        node_ = p;
+        p = p->parent;
+      }
+      node_ = p;
+    }
+    return *this;
+  }
+
+  BSTIterator operator++(int)
+  {
+    BSTIterator tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  bool operator==(const BSTIterator& other) const
+  {
+    return node_ == other.node_;
+  }
+
+  bool operator!=(const BSTIterator& other) const
+  {
+    return node_ != other.node_;
+  }
+
+  NodeBase* node_;
+};
+
+template <class Key, class Value>
+class BSTConstIterator {
+public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = const std::pair<const Key, Value>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = value_type*;
+  using reference = value_type&;
+
+  BSTConstIterator():
+    node_(nullptr)
+  {
+  }
+
+  explicit BSTConstIterator(NodeBase* node):
+    node_(node)
+  {
+  }
+
+  BSTConstIterator(const BSTIterator<Key, Value>& it):
+    node_(it.node_)
+  {
+  }
+
+  reference operator*() const
+  {
+    return static_cast<Node<Key, Value>*>(node_)->data;
+  }
+
+  pointer operator->() const
+  {
+    return &(static_cast<Node<Key, Value>*>(node_)->data);
+  }
+
+  BSTConstIterator& operator++()
+  {
+    if (node_->right->left != node_->right) {
+      node_ = node_->right;
+      while (node_->left->left != node_->left) {
+        node_ = node_->left;
+      }
+    } else {
+      NodeBase* p = node_->parent;
+      while (p->parent != p && node_ == p->right) {
+        node_ = p;
+        p = p->parent;
+      }
+      node_ = p;
+    }
+    return *this;
+  }
+
+  BSTConstIterator operator++(int)
+  {
+    BSTConstIterator tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  bool operator==(const BSTConstIterator& other) const
+  {
+    return node_ == other.node_;
+  }
+
+  bool operator!=(const BSTConstIterator& other) const
+  {
+    return node_ != other.node_;
+  }
+
+  NodeBase* node_;
+};
+
+template <class Key, class Value, class Compare = std::less<Key>>
+class BSTree {
+public:
+  using iterator = BSTIterator<Key, Value>;
+  using const_iterator = BSTConstIterator<Key, Value>;
+
+  BSTree():
+    size_(0)
+  {
+    fakeLeaf_.left = &fakeLeaf_;
+    fakeLeaf_.right = &fakeLeaf_;
+    fakeLeaf_.parent = &fakeLeaf_;
+
+    fakeRoot_.parent = &fakeRoot_;
+    fakeRoot_.left = &fakeLeaf_;
+    fakeRoot_.right = &fakeLeaf_;
+  }
+
+  BSTree(const BSTree& other):
+    BSTree()
+  {
+    for (auto it = other.cbegin(); it != other.cend(); ++it) {
+      push(it->first, it->second);
+    }
+  }
+
+  BSTree(BSTree&& other) noexcept :
+    BSTree()
+  {
+    swap(other);
+  }
+
+  BSTree& operator=(const BSTree& other)
+  {
+    if (this != &other) {
+      BSTree tmp(other);
+      swap(tmp);
+    }
+    return *this;
+  }
+
+  BSTree& operator=(BSTree&& other) noexcept
+  {
+    swap(other);
+    return *this;
+  }
+
+  ~BSTree()
+  {
+    clear();
+  }
+
+  void push(Key k, Value v)
+  {
+    NodeBase* curr = fakeRoot_.left;
+    NodeBase* parent = &fakeRoot_;
+    bool isLeft = true;
+
+    while (!isFakeLeaf(curr)) {
+      auto* n = static_cast<Node<Key, Value>*>(curr);
+      if (comp_(k, n->data.first)) {
+        parent = curr;
+        curr = curr->left;
+        isLeft = true;
+      } else if (comp_(n->data.first, k)) {
+        parent = curr;
+        curr = curr->right;
+        isLeft = false;
+      } else {
+        n->data.second = v;
+        return;
+      }
+    }
+
+    auto* newNode = new Node<Key, Value>(k, v);
+    newNode->left = &fakeLeaf_;
+    newNode->right = &fakeLeaf_;
+    newNode->parent = parent;
+
+    if (isFakeRoot(parent) || isLeft) {
+      parent->left = newNode;
+    } else {
+      parent->right = newNode;
+    }
+    size_++;
+  }
+
+  Value get(Key k) const
+  {
+    NodeBase* node = findNode(k);
+    if (isFakeLeaf(node)) {
+      throw std::out_of_range("Key not found");
+    }
+    return static_cast<Node<Key, Value>*>(node)->data.second;
+  }
+
+  bool has(Key k) const
+  {
+    return !isFakeLeaf(findNode(k));
+  }
+
+  Value drop(Key k)
+  {
+    NodeBase* nodeT = findNode(k);
+    if (isFakeLeaf(nodeT)) {
+      throw std::out_of_range("Key not found");
+    }
+
+    Value droppedVal = static_cast<Node<Key, Value>*>(nodeT)->data.second;
+
+    if (isFakeLeaf(nodeT->left) && isFakeLeaf(nodeT->right)) {
+      replaceChild(nodeT, &fakeLeaf_);
+    } else if (isFakeLeaf(nodeT->left)) {
+      replaceChild(nodeT, nodeT->right);
+    } else if (isFakeLeaf(nodeT->right)) {
+      replaceChild(nodeT, nodeT->left);
+    } else {
+      NodeBase* minRight = nodeT->right;
+      while (!isFakeLeaf(minRight->left)) {
+        minRight = minRight->left;
+      }
+
+      replaceChild(minRight, minRight->right);
+
+      minRight->parent = nodeT->parent;
+      if (nodeT->parent->left == nodeT) {
+        nodeT->parent->left = minRight;
+      } else {
+        nodeT->parent->right = minRight;
+      }
+
+      minRight->left = nodeT->left;
+      if (!isFakeLeaf(minRight->left)) {
+        minRight->left->parent = minRight;
+      }
+
+      minRight->right = nodeT->right;
+      if (!isFakeLeaf(minRight->right)) {
+        minRight->right->parent = minRight;
+      }
+    }
+
+    delete static_cast<Node<Key, Value>*>(nodeT);
+    size_--;
+    return droppedVal;
+  }
+
+  const_iterator rotateLeft(const_iterator it)
+  {
+    NodeBase* x = it.node_;
+    NodeBase* p = x->parent;
+    if (isFakeRoot(p) || p->right != x) {
+      return it;
+    }
+
+    NodeBase* g = p->parent;
+    p->right = x->left;
+    if (!isFakeLeaf(x->left)) {
+      x->left->parent = p;
+    }
+
+    x->left = p;
+    p->parent = x;
+    x->parent = g;
+
+    if (g->left == p) {
+      g->left = x;
+    } else {
+      g->right = x;
+    }
+    return it;
+  }
+
+  const_iterator rotateRight(const_iterator it)
+  {
+    NodeBase* x = it.node_;
+    NodeBase* p = x->parent;
+    if (isFakeRoot(p) || p->left != x) {
+      return it;
+    }
+
+    NodeBase* g = p->parent;
+    p->left = x->right;
+    if (!isFakeLeaf(x->right)) {
+      x->right->parent = p;
+    }
+
+    x->right = p;
+    p->parent = x;
+    x->parent = g;
+
+    if (g->left == p) {
+      g->left = x;
+    } else {
+      g->right = x;
+    }
+    return it;
+  }
+
+  const_iterator rotateLargeLeft(const_iterator it)
+  {
+    const_iterator step1 = rotateRight(it);
+    return rotateLeft(step1);
+  }
+
+  const_iterator rotateLargeRight(const_iterator it)
+  {
+    const_iterator step1 = rotateLeft(it);
+    return rotateRight(step1);
+  }
+
+  size_t height(const_iterator it) const
+  {
+    return calcHeight(it.node_);
+  }
+
+  size_t height() const
+  {
+    return calcHeight(fakeRoot_.left);
+  }
+
+  bool empty() const
+  {
+    return size_ == 0;
+  }
+
+  size_t size() const
+  {
+    return size_;
+  }
+
+  void swap(BSTree& other) noexcept
+  {
+    std::swap(size_, other.size_);
+
+    NodeBase* thisRoot = fakeRoot_.left;
+    NodeBase* otherRoot = other.fakeRoot_.left;
+
+    if (!isFakeLeaf(thisRoot)) {
+      thisRoot->parent = &other.fakeRoot_;
+      other.fakeRoot_.left = thisRoot;
+    } else {
+      other.fakeRoot_.left = &other.fakeLeaf_;
+    }
+
+    if (!other.isFakeLeaf(otherRoot)) {
+      otherRoot->parent = &fakeRoot_;
+      fakeRoot_.left = otherRoot;
+    } else {
+      fakeRoot_.left = &fakeLeaf_;
+    }
+
+    updateFakeLeafPointers(fakeRoot_.left, &other.fakeLeaf_, &fakeLeaf_);
+    updateFakeLeafPointers(other.fakeRoot_.left, &fakeLeaf_, &other.fakeLeaf_);
+  }
+
+  iterator begin()
+  {
+    NodeBase* n = fakeRoot_.left;
+    if (isFakeLeaf(n)) {
+      return iterator(&fakeRoot_);
+    }
+    while (!isFakeLeaf(n->left)) {
+      n = n->left;
+    }
+    return iterator(n);
+  }
+
+  iterator end()
+  {
+    return iterator(&fakeRoot_);
+  }
+
+  const_iterator cbegin() const
+  {
+    NodeBase* n = fakeRoot_.left;
+    if (isFakeLeaf(n)) {
+      return const_iterator(const_cast<NodeBase*>(&fakeRoot_));
+    }
+    while (!isFakeLeaf(n->left)) {
+      n = n->left;
+    }
+    return const_iterator(n);
+  }
+
+  const_iterator cend() const
+  {
+    return const_iterator(const_cast<NodeBase*>(&fakeRoot_));
+  }
+
+  private:
+  bool isFakeLeaf(const NodeBase* n) const
+  {
+    return n == &fakeLeaf_;
+  }
+
+  bool isFakeRoot(const NodeBase* n) const
+  {
+    return n == &fakeRoot_;
+  }
+
+  NodeBase* findNode(Key k) const
+  {
+    NodeBase* curr = fakeRoot_.left;
+    while (!isFakeLeaf(curr)) {
+      auto* n = static_cast<Node<Key, Value>*>(curr);
+      if (comp_(k, n->data.first)) {
+        curr = curr->left;
+      } else if (comp_(n->data.first, k)) {
+        curr = curr->right;
+      } else {
+        return curr;
+      }
+    }
+    return const_cast<NodeBase*>(&fakeLeaf_);
+  }
+
+  void replaceChild(NodeBase* oldNode, NodeBase* newNode)
+  {
+    if (oldNode->parent->left == oldNode) {
+      oldNode->parent->left = newNode;
+    } else {
+      oldNode->parent->right = newNode;
+    }
+    if (!isFakeLeaf(newNode)) {
+      newNode->parent = oldNode->parent;
+    }
+  }
+
+  void clear()
+  {
+    clearNode(fakeRoot_.left);
+    fakeRoot_.left = &fakeLeaf_;
+    size_ = 0;
+  }
+
+  void clearNode(NodeBase* n)
+  {
+    if (isFakeLeaf(n)) {
+      return;
+    }
+    clearNode(n->left);
+    clearNode(n->right);
+    delete static_cast<Node<Key, Value>*>(n);
+  }
+
+  size_t calcHeight(NodeBase* n) const
+  {
+    if (isFakeLeaf(n)) {
+      return 0;
+    }
+    return 1 + std::max(calcHeight(n->left), calcHeight(n->right));
+  }
+
+  void updateFakeLeafPointers(NodeBase* n, NodeBase* oldLeaf, NodeBase* newLeaf)
+  {
+    if (n == newLeaf || n == oldLeaf) {
+      return;
+    }
+    if (n->left == oldLeaf) {
+      n->left = newLeaf;
+    } else {
+      updateFakeLeafPointers(n->left, oldLeaf, newLeaf);
+    }
+    if (n->right == oldLeaf) {
+      n->right = newLeaf;
+    } else {
+      updateFakeLeafPointers(n->right, oldLeaf, newLeaf);
+    }
+  }
+
+  NodeBase fakeLeaf_;
+  NodeBase fakeRoot_;
+  Compare comp_;
+  size_t size_;
+};
+
+}
+
+#endif
