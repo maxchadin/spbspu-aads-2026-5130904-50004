@@ -134,3 +134,34 @@ int chadin::Collection::getRehashCount() const
 {
   return rehashCount_;
 }
+
+void chadin::Collection::clear()
+{
+  table_.assign(capacity_, Entry_t{Player(), Status::EMPTY, 0});
+  size_ = 0;
+  collisionsTotal_ = 0;
+  maxProbeDist_ = 0;
+  totalProbeDist_ = 0;
+}
+
+void chadin::Collection::rehash()
+{
+  std::vector< Entry_t > oldTable = table_;
+  capacity_ *= 2;
+  table_.assign(capacity_, Entry_t{Player(), Status::EMPTY, 0});
+  size_ = 0;
+  collisionsTotal_ = 0;
+  maxProbeDist_ = 0;
+  totalProbeDist_ = 0;
+  rehashCount_++;
+  for (const Entry_t& entry : oldTable) {
+    if (entry.status_ == Status::OCCUPIED) {
+      addPlayer(entry.player_);
+    }
+  }
+}
+
+int chadin::Collection::hash(const int id) const
+{
+  return id % capacity_;
+}
