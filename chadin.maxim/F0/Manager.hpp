@@ -38,10 +38,6 @@ private:
   void cmdCalcTeamRating();
   void cmdPredictMatch();
 
-  void cmdSaveCollection();
-  void cmdLoadCollection();
-  void cmdSaveAllSquads();
-  void cmdLoadAllSquads();
   void cmdHelp();
 
   std::string readStringToken();
