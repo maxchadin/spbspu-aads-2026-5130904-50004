@@ -86,3 +86,27 @@ bool chadin::Collection::hasPlayer(const int id) const
   Player dummy;
   return findPlayer(id, dummy);
 }
+
+const std::vector< chadin::Collection::Entry_t >& chadin::Collection::getTable() const
+{
+  return table_;
+}
+
+int chadin::Collection::getSize() const
+{
+  return size_;
+}
+
+int chadin::Collection::getCapacity() const
+{
+  return capacity_;
+}
+
+double chadin::Collection::getLoadFactor() const
+{
+  if (capacity_ == 0) {
+    return 0.0;
+  } else {
+    return static_cast< double >(size_) / capacity_;
+  }
+}
