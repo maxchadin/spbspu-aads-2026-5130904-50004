@@ -45,3 +45,31 @@ bool chadin::Squad::removePlayer(const int playerId)
   }
   return false;
 }
+
+void chadin::Squad::clear()
+{
+  for (int i = 0; i < SQUAD_SIZE; ++i) {
+    positions_[i] = -1;
+  }
+}
+
+bool chadin::Squad::hasPlayer(const int playerId) const
+{
+  for (int i = 0; i < SQUAD_SIZE; ++i) {
+    if (positions_[i] == playerId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int chadin::Squad::getPlayerCount() const
+{
+  int count = 0;
+  for (int i = 0; i < SQUAD_SIZE; ++i) {
+    if (positions_[i] != -1) {
+      count++;
+    }
+  }
+  return count;
+}
