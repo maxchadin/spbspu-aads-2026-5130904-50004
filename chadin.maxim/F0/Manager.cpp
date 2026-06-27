@@ -169,6 +169,32 @@ void chadin::Manager::cmdListPlayers()
   std::cout << "Total players: " << collection_.getSize() << "\n";
 }
 
+void chadin::Manager::cmdCreateSquad()
+{
+  std::string name = readStringToken();
+  if (squads_.find(name) == squads_.end()) {
+    squads_[name] = Squad(name);
+    std::cout << "[OK] Squad \"" << name << "\" created (0/11 players).\n";
+  } else {
+    std::cerr << "<INVALID COMMAND> Squad \"" << name << "\" already exists.\n";
+  }
+}
+
+void chadin::Manager::cmdDeleteSquad()
+{
+  std::string name = readStringToken();
+  if (squads_.size() <= 1) {
+    std::cerr << "<INVALID COMMAND> Cannot delete the last squad. At least one must exist.\n";
+  } else {
+    std::map< std::string, Squad >::iterator it = squads_.find(name);
+    if (it != squads_.end()) {
+      squads_.erase(it);
+      std::cout << "[OK] Squad \"" << name << "\" deleted.\n";
+    } else {
+      std::cerr << "<INVALID COMMAND> Squad \"" << name << "\" not found.\n";
+    }
+  }
+}
 void chadin::Manager::cmdShowTableStats()
 {
   std::cout << "========== Robin Hood Hash Table Statistics ==========\n"
