@@ -206,3 +206,24 @@ void chadin::Manager::cmdShowTableStats()
             << "Max probe dist: " << collection_.getMaxProbe() << "\n"
             << "Rehash count: " << collection_.getRehashCount() << "\n";
 }
+
+void chadin::Manager::cmdListSquads()
+{
+  std::cout << "========== ALL SQUADS ==========\n";
+  for (const std::pair< const std::string, Squad >& pair : squads_) {
+    std::cout << pair.first << " (" << pair.second.getPlayerCount() << "/11 players)\n";
+  }
+  std::cout << "Total squads: " << squads_.size() << "\n";
+}
+
+void chadin::Manager::cmdShowSquad()
+{
+  std::string name = readStringToken();
+  std::map< std::string, Squad >::iterator it = squads_.find(name);
+  if (it != squads_.end()) {
+    std::cout << "========== SQUAD: \"" << name << "\" ==========\n";
+    std::cout << "Players in squad: " << it->second.getPlayerCount() << "/11\n";
+  } else {
+    std::cerr << "<INVALID COMMAND> Squad \"" << name << "\" not found.\n";
+  }
+}
