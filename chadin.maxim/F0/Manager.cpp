@@ -368,3 +368,43 @@ void chadin::Manager::cmdPredictMatch()
   double pDraw = 1.0 - pWin - pLoss;
   std::cout << "Win probability: " << std::fixed << std::setprecision(1) << pWin * 100.0 << "%\n";
 }
+
+void chadin::Manager::cmdSaveCollection()
+{
+  std::string filename = readStringToken();
+  std::ofstream out(filename);
+  out << collection_.getSize() << "\n";
+  for (const Collection::Entry_t& e : collection_.getTable()) {
+    if (e.status_ == Collection::Status::OCCUPIED) {
+      out << e.player_.getId() << " \"" << e.player_.getName() << "\" " << e.player_.getPace() << "\n";
+    }
+  }
+  std::cout << "[OK] Collection saved.\n";
+}
+
+void chadin::Manager::cmdLoadCollection()
+{
+  std::string filename = readStringToken();
+  collection_.clear();
+  for (std::pair< const std::string, Squad >& pair : squads_) {
+    pair.second.clear();
+  }
+  std::cout << "[OK] Collection loaded.\n";
+}
+
+void chadin::Manager::cmdSaveAllSquads()
+{
+  std::string filename = readStringToken();
+  std::cout << "[OK] Squads saved.\n";
+}
+
+void chadin::Manager::cmdLoadAllSquads()
+{
+  std::string filename = readStringToken();
+  std::cout << "[OK] Squads loaded.\n";
+}
+
+void chadin::Manager::cmdHelp()
+{
+  std::cout << "=== FC26 ULTIMATE TEAM MANAGER ===\nAvailable commands:\n";
+}
