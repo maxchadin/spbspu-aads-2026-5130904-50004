@@ -110,3 +110,27 @@ double chadin::Collection::getLoadFactor() const
     return static_cast< double >(size_) / capacity_;
   }
 }
+
+int chadin::Collection::getCollisions() const
+{
+  return collisionsTotal_;
+}
+
+double chadin::Collection::getAverageProbe() const
+{
+  if (size_ == 0) {
+    return 0.0;
+  } else {
+    return static_cast< double >(totalProbeDist_) / size_;
+  }
+}
+
+int chadin::Collection::getMaxProbe() const
+{
+  return maxProbeDist_;
+}
+
+int chadin::Collection::getRehashCount() const
+{
+  return rehashCount_;
+}
