@@ -1,4 +1,5 @@
 #include "commands.hpp"
+#include <sstream>
 
 namespace {
   template< class T >
@@ -130,29 +131,40 @@ namespace chadin {
     }
   }
 
-  void executeBind(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  void executeBind(GraphTable& allGraphs, const std::string& gName, const std::string& v1, const std::string& v2, unsigned int weight, std::ostream& out)
   {
-    std::string graphName, v1, v2;
-    unsigned int weight;
-    in >> graphName >> v1 >> v2 >> weight;
-    if (!allGraphs.has(graphName)) {
+    if (!allGraphs.has(gName)) {
       out << "<INVALID COMMAND>\n";
       return;
     }
-    allGraphs.get(graphName).addEdge(v1, v2, weight);
+    allGraphs.get(gName).addEdge(v1, v2, weight);
   }
 
-  void executeCut(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  void executeCut(GraphTable& allGraphs, const std::string& gName, const std::string& v1, const std::string& v2, unsigned int weight, std::ostream& out)
   {
-    std::string graphName, v1, v2;
-    unsigned int weight;
-    in >> graphName >> v1 >> v2 >> weight;
-    if (!allGraphs.has(graphName)) {
+    if (!allGraphs.has(gName)) {
       out << "<INVALID COMMAND>\n";
       return;
     }
 
-    Graph& g = allGraphs.get(graphName);
+    Graph& g = allGraphs.get(gName);
+
+    const auto& verts = g.getVertexes();
+    bool hasV1 = false;
+    bool hasV2 = false;
+    for (size_t i = 0; i < verts.size(); ++i) {
+      if (verts[i] == v1) {
+        hasV1 = true;
+      }
+      if (verts[i] == v2) {
+        hasV2 = true;
+      }
+    }
+    if (!hasV1 || !hasV2) {
+      out << "<INVALID COMMAND>\n";
+      return;
+    }
+
     std::pair< std::string, std::string > edgeKey(v1, v2);
     auto& edges = g.getEdges();
 
@@ -180,36 +192,21 @@ namespace chadin {
     }
   }
 
-  void executeCreate(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  void executeCreate(GraphTable& allGraphs, const std::string& gName, const Vector< std::string >& newVerts, std::ostream& out)
   {
-    std::string graphName;
-    size_t countK;
-    in >> graphName >> countK;
-    Vector< std::string > newVerts;
-
-    for (size_t i = 0; i < countK; ++i) {
-      std::string v;
-      in >> v;
-      newVerts.pushBack(v);
-    }
-
-    if (allGraphs.has(graphName)) {
+    if (allGraphs.has(gName)) {
       out << "<INVALID COMMAND>\n";
       return;
     }
-
     Graph g;
     for (size_t i = 0; i < newVerts.size(); ++i) {
       g.addVertex(newVerts[i]);
     }
-    allGraphs.add(graphName, g);
+    allGraphs.add(gName, g);
   }
 
-  void executeMerge(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  void executeMerge(GraphTable& allGraphs, const std::string& newGraph, const std::string& oldG1, const std::string& oldG2, std::ostream& out)
   {
-    std::string newGraph, oldG1, oldG2;
-    in >> newGraph >> oldG1 >> oldG2;
-
     if (allGraphs.has(newGraph) || !allGraphs.has(oldG1) || !allGraphs.has(oldG2)) {
       out << "<INVALID COMMAND>\n";
       return;
@@ -246,19 +243,8 @@ namespace chadin {
     allGraphs.add(newGraph, g);
   }
 
-  void executeExtract(GraphTable& allGraphs, std::istream& in, std::ostream& out)
+  void executeExtract(GraphTable& allGraphs, const std::string& newGraph, const std::string& oldGraph, const Vector< std::string >& extrVerts, std::ostream& out)
   {
-    std::string newGraph, oldGraph;
-    size_t countK;
-    in >> newGraph >> oldGraph >> countK;
-
-    Vector< std::string > extrVerts;
-    for (size_t i = 0; i < countK; ++i) {
-      std::string v;
-      in >> v;
-      extrVerts.pushBack(v);
-    }
-
     if (allGraphs.has(newGraph) || !allGraphs.has(oldGraph)) {
       out << "<INVALID COMMAND>\n";
       return;
@@ -306,32 +292,115 @@ namespace chadin {
 
   void processCommands(std::istream& in, std::ostream& out, GraphTable& allGraphs)
   {
-    std::string cmd;
-    while (in >> cmd) {
+    std::string line;
+    while (std::getline(in, line)) {
+      if (line.empty()) {
+        continue;
+      }
+
+      std::istringstream iss(line);
+      std::string cmd;
+      if (!(iss >> cmd)) {
+        continue;
+      }
+
       if (cmd == "graphs") {
-        printGraphs(allGraphs, out);
+        std::string extra;
+        if (iss >> extra) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          printGraphs(allGraphs, out);
+        }
       } else if (cmd == "vertexes") {
-        std::string graphName;
-        in >> graphName;
-        printVertexes(allGraphs, graphName, out);
+        std::string graphName, extra;
+        if (!(iss >> graphName) || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          printVertexes(allGraphs, graphName, out);
+        }
       } else if (cmd == "outbound") {
-        std::string graphName, vertexName;
-        in >> graphName >> vertexName;
-        printOutbound(allGraphs, graphName, vertexName, out);
+        std::string graphName, vertexName, extra;
+        if (!(iss >> graphName >> vertexName) || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          printOutbound(allGraphs, graphName, vertexName, out);
+        }
       } else if (cmd == "inbound") {
-        std::string graphName, vertexName;
-        in >> graphName >> vertexName;
-        printInbound(allGraphs, graphName, vertexName, out);
+        std::string graphName, vertexName, extra;
+        if (!(iss >> graphName >> vertexName) || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          printInbound(allGraphs, graphName, vertexName, out);
+        }
       } else if (cmd == "bind") {
-        executeBind(allGraphs, in, out);
+        std::string graphName, v1, v2, extra;
+        unsigned int weight;
+        if (!(iss >> graphName >> v1 >> v2 >> weight) || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          executeBind(allGraphs, graphName, v1, v2, weight, out);
+        }
       } else if (cmd == "cut") {
-        executeCut(allGraphs, in, out);
+        std::string graphName, v1, v2, extra;
+        unsigned int weight;
+        if (!(iss >> graphName >> v1 >> v2 >> weight) || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          executeCut(allGraphs, graphName, v1, v2, weight, out);
+        }
       } else if (cmd == "create") {
-        executeCreate(allGraphs, in, out);
+        std::string graphName;
+        size_t countK;
+        if (!(iss >> graphName >> countK)) {
+          out << "<INVALID COMMAND>\n";
+          continue;
+        }
+        Vector< std::string > newVerts;
+        bool parsingOk = true;
+        for (size_t i = 0; i < countK; ++i) {
+          std::string v;
+          if (!(iss >> v)) {
+            parsingOk = false;
+            break;
+          }
+          newVerts.pushBack(v);
+        }
+        std::string extra;
+        if (!parsingOk || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          executeCreate(allGraphs, graphName, newVerts, out);
+        }
       } else if (cmd == "merge") {
-        executeMerge(allGraphs, in, out);
+        std::string newGraph, oldG1, oldG2, extra;
+        if (!(iss >> newGraph >> oldG1 >> oldG2) || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          executeMerge(allGraphs, newGraph, oldG1, oldG2, out);
+        }
       } else if (cmd == "extract") {
-        executeExtract(allGraphs, in, out);
+        std::string newGraph, oldGraph;
+        size_t countK;
+        if (!(iss >> newGraph >> oldGraph >> countK)) {
+          out << "<INVALID COMMAND>\n";
+          continue;
+        }
+        Vector< std::string > extrVerts;
+        bool parsingOk = true;
+        for (size_t i = 0; i < countK; ++i) {
+          std::string v;
+          if (!(iss >> v)) {
+            parsingOk = false;
+            break;
+          }
+          extrVerts.pushBack(v);
+        }
+        std::string extra;
+        if (!parsingOk || (iss >> extra)) {
+          out << "<INVALID COMMAND>\n";
+        } else {
+          executeExtract(allGraphs, newGraph, oldGraph, extrVerts, out);
+        }
       } else {
         out << "<INVALID COMMAND>\n";
       }
