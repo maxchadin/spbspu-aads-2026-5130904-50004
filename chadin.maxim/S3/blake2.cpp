@@ -1,4 +1,5 @@
 #include "blake2.hpp"
+#include <cstdint>
 
 namespace chadin {
   size_t Blake2sHash::operator()(const std::string& str) const
