@@ -21,3 +21,47 @@ chadin::Collection::Collection():
 chadin::Collection::~Collection()
 {
 }
+
+bool chadin::Collection::addPlayer(const Player& player)
+{
+  if (hasPlayer(player.getId())) {
+    return false;
+  }
+  const double maxLoadFactor = 0.5;
+  if (static_cast< double >(size_) >= maxLoadFactor * capacity_) {
+    rehash();
+  }
+  Entry_t curr{player, Status::OCCUPIED, 0};
+  int index = hash(player.getId());
+  while (table_[index].status_ == Status::OCCUPIED) {
+    if (curr.probeDistance_ > table_[index].probeDistance_) {
+      std::swap(curr, table_[index]);
+    }
+    index = (index + 1) % capacity_;
+    curr.probeDistance_++;
+    collisionsTotal_++;
+  }
+  table_[index] = curr;
+  size_++;
+  totalProbeDist_ += curr.probeDistance_;
+  if (curr.probeDistance_ > maxProbeDist_) {
+    maxProbeDist_ = curr.probeDistance_;
+  }
+  return true;
+}
+
+bool chadin::Collection::removePlayer(const int id)
+{
+  int index = hash(id);
+  int dist = 0;
+  while (table_[index].status_ != Status::EMPTY && dist <= capacity_) {
+    if (table_[index].status_ == Status::OCCUPIED && table_[index].player_.getId() == id) {
+      table_[index].status_ = Status::DELETED;
+      size_--;
+      return true;
+    }
+    index = (index + 1) % capacity_;
+    dist++;
+  }
+  return false;
+}
