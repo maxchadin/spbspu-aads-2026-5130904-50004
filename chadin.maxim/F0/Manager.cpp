@@ -278,3 +278,93 @@ void chadin::Manager::cmdClearSquad()
     std::cerr << "<INVALID COMMAND> Squad not found.\n";
   }
 }
+
+void chadin::Manager::cmdCalcChemistry()
+{
+  std::string name = readStringToken();
+  std::map< std::string, Squad >::const_iterator it = squads_.find(name);
+  if (it != squads_.end()) {
+    std::cout << "Chemistry calculated.\n";
+  } else {
+    std::cerr << "<INVALID COMMAND> Squad not found.\n";
+  }
+}
+
+void chadin::Manager::cmdCalcTeamRating()
+{
+  std::string name = readStringToken();
+  std::map< std::string, Squad >::const_iterator it = squads_.find(name);
+  if (it == squads_.end() || it->second.getPlayerCount() < Squad::SQUAD_SIZE) {
+    std::cerr << "<INVALID COMMAND> Squad must have 11 players.\n";
+    return;
+  }
+  std::vector< std::vector< double > > matrix(EQUATIONS_COUNT, std::vector< double >(COLUMNS_COUNT, 0.0));
+  for (int i = 0; i < Squad::SQUAD_SIZE; ++i) {
+    Player p;
+    collection_.findPlayer(it->second.getPlayerAt(i), p);
+    matrix[i][0] = p.getPace();
+    matrix[i][1] = p.getShooting();
+    matrix[i][2] = p.getPassing();
+    matrix[i][3] = p.getDribbling();
+    matrix[i][4] = p.getDefending();
+    matrix[i][5] = p.getPhysical();
+    matrix[i][6] = p.getRating();
+  }
+  for (int k = 0; k < UNKNOWNS_COUNT; ++k) {
+    int maxPivotRow = k;
+    double maxVal = std::abs(matrix[k][k]);
+    for (int i = k + 1; i < EQUATIONS_COUNT; ++i) {
+      if (std::abs(matrix[i][k]) > maxVal) {
+        maxVal = std::abs(matrix[i][k]);
+        maxPivotRow = i;
+      }
+    }
+    std::swap(matrix[k], matrix[maxPivotRow]);
+    double pivot = matrix[k][k];
+    if (std::abs(pivot) > 1e-9) {
+      for (int j = k; j < COLUMNS_COUNT; ++j) {
+        matrix[k][j] /= pivot;
+      }
+      for (int i = k + 1; i < EQUATIONS_COUNT; ++i) {
+        double factor = matrix[i][k];
+        for (int j = k; j < COLUMNS_COUNT; ++j) {
+          matrix[i][j] -= factor * matrix[k][j];
+        }
+      }
+    }
+  }
+  std::vector< double > weights(UNKNOWNS_COUNT, 0.0);
+  for (int i = UNKNOWNS_COUNT - 1; i >= 0; --i) {
+    double sum = 0.0;
+    for (int j = i + 1; j < UNKNOWNS_COUNT; ++j) {
+      sum += matrix[i][j] * weights[j];
+    }
+    weights[i] = matrix[i][6] - sum;
+  }
+  double finalRating = 0.0;
+  for (int i = 0; i < Squad::SQUAD_SIZE; ++i) {
+    Player p;
+    collection_.findPlayer(it->second.getPlayerAt(i), p);
+    finalRating += (weights[0] * p.getPace() + weights[1] * p.getShooting() + weights[2] * p.getPassing() +
+                    weights[3] * p.getDribbling() + weights[4] * p.getDefending() + weights[5] * p.getPhysical());
+  }
+  finalRating /= Squad::SQUAD_SIZE;
+  std::cout << "Final team rating for \"" << name << "\": " << std::fixed << std::setprecision(1) << finalRating << "\n";
+}
+
+void chadin::Manager::cmdPredictMatch()
+{
+  std::string name = readStringToken();
+  double oppRating = 0.0;
+  std::cin >> oppRating;
+  std::map< std::string, Squad >::const_iterator it = squads_.find(name);
+  if (it == squads_.end() || it->second.getPlayerCount() < Squad::SQUAD_SIZE) {
+    std::cerr << "<INVALID COMMAND> Valid squad of 11 required.\n";
+    return;
+  }
+  double effRating = 85.0;
+  double pWin = 1.0 / (1.0 + std::exp(-(effRating - oppRating) / MAGIC_DIVISOR));
+  double pLoss = 1.0 / (1.0 + std::exp(-(oppRating - effRating) / MAGIC_DIVISOR));
+  double pDraw = 1.0 - pWin - pLoss;
+  std::cout << "Win probability: " << std::fixed << std::setprecision(1) << pWin * 100.0 << "%\n";
+}
