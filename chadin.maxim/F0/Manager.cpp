@@ -154,3 +154,29 @@ void chadin::Manager::cmdFindPlayer()
     std::cerr << "<INVALID COMMAND> Player with id " << id << " not found.\n";
   }
 }
+
+void chadin::Manager::cmdListPlayers()
+{
+  std::cout << "========== CLUB COLLECTION (Robin Hood Hash Table) ==========\n";
+  const std::vector< Collection::Entry_t >& table = collection_.getTable();
+  for (const Collection::Entry_t& entry : table) {
+    if (entry.status_ == Collection::Status::OCCUPIED) {
+      std::cout << "ID: " << entry.player_.getId() << " | Name: " << entry.player_.getName()
+                << " | Rating: " << std::fixed << std::setprecision(1)
+                << entry.player_.getRating() << "\n";
+    }
+  }
+  std::cout << "Total players: " << collection_.getSize() << "\n";
+}
+
+void chadin::Manager::cmdShowTableStats()
+{
+  std::cout << "========== Robin Hood Hash Table Statistics ==========\n"
+            << "Table size: " << collection_.getCapacity() << "\n"
+            << "Elements: " << collection_.getSize() << "\n"
+            << "Load factor: " << collection_.getLoadFactor() << "\n"
+            << "Collisions total: " << collection_.getCollisions() << "\n"
+            << "Average probe dist: " << collection_.getAverageProbe() << "\n"
+            << "Max probe dist: " << collection_.getMaxProbe() << "\n"
+            << "Rehash count: " << collection_.getRehashCount() << "\n";
+}
