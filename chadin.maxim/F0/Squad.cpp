@@ -1,122 +1,80 @@
 #include "Squad.hpp"
+#include <iostream>
 
-chadin::Squad::Squad():
-  name_(""),
-  positions_(SQUAD_SIZE, -1)
-{
-}
+namespace chadin {
 
-chadin::Squad::Squad(const std::string& name):
-  name_(name),
-  positions_(SQUAD_SIZE, -1)
-{
-}
+  Squad::Squad(const std::string &name):
+    name_(name)
+  {
+  }
 
-chadin::Squad::~Squad()
-{
-}
+  std::string Squad::getName() const
+  {
+    return name_;
+  }
 
-const std::string& chadin::Squad::getName() const
-{
-  return name_;
-}
+  void Squad::addPlayer(const Player &player)
+  {
+    if (positionToPlayerId_.size() >= 11) {
+      throw std::runtime_error("Squad is full (11/11).");
+    }
+    if (positionToPlayerId_.find(player.getPosition()) != positionToPlayerId_.end()) {
+      throw std::runtime_error("Position " + player.getPosition() + " already occupied.");
+    }
+    if (hasPlayer(player.getId())) {
+      throw std::runtime_error("Player already in squad.");
+    }
 
-bool chadin::Squad::addPlayer(const int playerId, const std::string& position)
-{
-  if (hasPlayer(playerId)) {
+    positionToPlayerId_[player.getPosition()] = player.getId();
+  }
+
+  void Squad::removePlayer(int id)
+  {
+    for (auto it = positionToPlayerId_.begin(); it != positionToPlayerId_.end(); ++it) {
+      if (it->second == id) {
+        positionToPlayerId_.erase(it);
+        return;
+      }
+    }
+    throw std::runtime_error("Player not found in squad.");
+  }
+
+  void Squad::clear()
+  {
+    positionToPlayerId_.clear();
+  }
+
+  bool Squad::hasPlayer(int id) const
+  {
+    for (const auto &pair : positionToPlayerId_) {
+      if (pair.second == id) {
+        return true;
+      }
+    }
     return false;
   }
-  int slot = getSlotIndex(position);
-  if (slot != -1 && positions_[slot] == -1) {
-    positions_[slot] = playerId;
-    return true;
-  } else {
-    return false;
-  }
-}
 
-bool chadin::Squad::removePlayer(const int playerId)
-{
-  for (int i = 0; i < SQUAD_SIZE; ++i) {
-    if (positions_[i] == playerId) {
-      positions_[i] = -1;
-      return true;
+  int Squad::getPlayerCount() const
+  {
+    return static_cast<int>(positionToPlayerId_.size());
+  }
+
+  std::vector<int> Squad::getPlayerIds() const
+  {
+    std::vector<int> ids;
+    for (const auto &pair : positionToPlayerId_) {
+      ids.push_back(pair.second);
+    }
+    return ids;
+  }
+
+  void Squad::show() const
+  {
+    std::cout << "========== SQUAD: \"" << name_ << "\" ==========\n"
+              << "Players: " << getPlayerCount() << "/11\n";
+    for (const auto &pair : positionToPlayerId_) {
+      std::cout << pair.first << " | ID: " << pair.second << "\n";
     }
   }
-  return false;
-}
 
-void chadin::Squad::clear()
-{
-  for (int i = 0; i < SQUAD_SIZE; ++i) {
-    positions_[i] = -1;
-  }
-}
-
-bool chadin::Squad::hasPlayer(const int playerId) const
-{
-  for (int i = 0; i < SQUAD_SIZE; ++i) {
-    if (positions_[i] == playerId) {
-      return true;
-    }
-  }
-  return false;
-}
-
-int chadin::Squad::getPlayerCount() const
-{
-  int count = 0;
-  for (int i = 0; i < SQUAD_SIZE; ++i) {
-    if (positions_[i] != -1) {
-      count++;
-    }
-  }
-  return count;
-}
-
-int chadin::Squad::getPlayerAt(const int slotIndex) const
-{
-  if (slotIndex >= 0 && slotIndex < SQUAD_SIZE) {
-    return positions_[slotIndex];
-  } else {
-    return -1;
-  }
-}
-
-int chadin::Squad::getSlotIndex(const std::string& position) const
-{
-  if (position == "GK"){
-    return 0;
-  }
-  if (position == "LB"){
-    return 1;
-  }
-  if (position == "CB") {
-    if (positions_[2] == -1){
-      return 2;
-    }
-    return 3;
-  }
-  if (position == "RB"){
-    return 4;
-  }
-  if (position == "CDM"){
-    return 5;
-  }
-  if (position == "CM") {
-    if (positions_[6] == -1){
-      return 6;
-    }
-    return 7;
-  }
-  if (position == "LW"){
-    return 8;
-  }
-  if (position == "RW"){
-    return 9;
-  }
-  if (position == "ST"){
-    return 10;
-  }
-  return -1;
 }

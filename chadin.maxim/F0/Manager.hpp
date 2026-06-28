@@ -1,48 +1,44 @@
-#ifndef MANAGER_HPP
-#define MANAGER_HPP
+#ifndef CHADIN_MANAGER_HPP
+#define CHADIN_MANAGER_HPP
 
 #include "Collection.hpp"
 #include "Squad.hpp"
-#include <map>
 #include <string>
+#include <map>
 
 namespace chadin {
 
-class Manager {
-public:
-  Manager();
-  ~Manager();
+  class Manager {
+  public:
+    void run();
 
-  void run();
+  private:
+    std::string readString(std::istream &is) const;
 
-private:
-  Collection collection_;
-  std::map< std::string, Squad > squads_;
+    void processAddPlayer();
+    void processRemovePlayer();
+    void processFindPlayer();
+    void processListPlayers();
+    void processShowTableStats();
 
-  void processCommand(const std::string& cmd);
-  void cmdAddPlayer();
-  void cmdRemovePlayer();
-  void cmdFindPlayer();
-  void cmdListPlayers();
-  void cmdShowTableStats();
+    void processCreateSquad();
+    void processDeleteSquad();
+    void processListSquads();
+    void processShowSquad();
 
-  void cmdCreateSquad();
-  void cmdDeleteSquad();
-  void cmdListSquads();
-  void cmdShowSquad();
-  void cmdAddToSquad();
-  void cmdRemoveFromSquad();
-  void cmdClearSquad();
+    void processAddToSquad();
+    void processRemoveFromSquad();
+    void processClearSquad();
 
-  void cmdCalcChemistry();
-  void cmdCalcTeamRating();
-  void cmdPredictMatch();
+    void processCalcTeamRating();
+    void processPredictMatch();
+    double calculateSquadRating(const Squad& squad, bool printDetails) const;
+    void processHelp() const;
 
-  void cmdHelp();
 
-  std::string readStringToken();
-  std::string getSquadsForPlayer(int id) const;
-};
+    Collection collection_;
+    std::map<std::string, Squad> squads_;
+  };
 
 }
 

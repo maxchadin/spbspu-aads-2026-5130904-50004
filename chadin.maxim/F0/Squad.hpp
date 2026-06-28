@@ -1,33 +1,32 @@
-#ifndef SQUAD_HPP
-#define SQUAD_HPP
+#ifndef CHADIN_SQUAD_HPP
+#define CHADIN_SQUAD_HPP
 
+#include "Player.hpp"
 #include <string>
+#include <map>
 #include <vector>
 
 namespace chadin {
 
-class Squad {
-public:
-  Squad();
-  Squad(const std::string& name);
-  ~Squad();
+  class Squad {
+  public:
+    explicit Squad(const std::string &name);
 
-  const std::string& getName() const;
-  bool addPlayer(int playerId, const std::string& position);
-  bool removePlayer(int playerId);
-  void clear();
-  bool hasPlayer(int playerId) const;
-  int getPlayerCount() const;
+    std::string getName() const;
+    void addPlayer(const Player &player);
+    void removePlayer(int id);
+    void clear();
+    bool hasPlayer(int id) const;
 
-  int getPlayerAt(int slotIndex) const;
-  int getSlotIndex(const std::string& position) const;
+    int getPlayerCount() const;
+    std::vector<int> getPlayerIds() const;
 
-  static const int SQUAD_SIZE = 11;
+    void show() const;
 
-private:
-  std::string name_;
-  std::vector< int > positions_;
-};
+  private:
+    std::string name_;
+    std::map<std::string, int> positionToPlayerId_;
+  };
 
 }
 

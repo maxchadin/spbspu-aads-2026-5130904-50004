@@ -1,26 +1,25 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -Wold-style-cast -std=c++14 -O2
-SOURCES = main.cpp Player.cpp Collection.cpp Squad.cpp Manager.cpp
-OBJECTS = $(SOURCES:.cpp=.o)
-EXECUTABLE = fc26_manager
+CXXFLAGS = -std=c++14 -Wall -Wextra -Wold-style-cast
 
-TEST_SOURCES = test-main.cpp test-collection.cpp test-squad.cpp Player.cpp Collection.cpp Squad.cpp
-TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
-TEST_EXECUTABLE = test_fc26
+OBJS = main.o Player.o Collection.o Squad.o Manager.o
+TEST_SQUAD_OBJS = test-squad.o test-main.o Squad.o Player.o
+TEST_COLL_OBJS = test-collection.o test-main.o Collection.o Player.o
 
-all: $(EXECUTABLE)
+all: manager test_squad test_collection
 
-$(EXECUTABLE): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $@
+manager: $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-test: $(TEST_EXECUTABLE)
-	./$(TEST_EXECUTABLE)
+test_squad: $(TEST_SQUAD_OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-$(TEST_EXECUTABLE): $(TEST_OBJECTS)
-	$(CXX) $(CXXFLAGS) $(TEST_OBJECTS) -o $@
+test_collection: $(TEST_COLL_OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(TEST_OBJECTS) $(EXECUTABLE) $(TEST_EXECUTABLE)
+	rm -f *.o manager test_squad test_collection
+
+.PHONY: all clean

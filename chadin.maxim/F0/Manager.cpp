@@ -1,426 +1,382 @@
 #include "Manager.hpp"
 #include <iostream>
-#include <fstream>
 #include <cmath>
 #include <iomanip>
 
-const int EQUATIONS_COUNT = 11;
-const int UNKNOWNS_COUNT = 6;
-const int COLUMNS_COUNT = 7;
-const double MAGIC_DIVISOR = 10.0;
-const double BONUS_CHEMISTRY_THRESHOLD = 25.0;
-const double BONUS_VALUE = 2.0;
+namespace chadin {
 
-chadin::Manager::Manager():
-  collection_(),
-  squads_()
-{
-}
-
-chadin::Manager::~Manager()
-{
-}
-
-void chadin::Manager::run()
-{
-  squads_["Main Squad"] = Squad("Main Squad");
-  std::string cmd;
-  while (std::cin >> cmd) {
-    if (cmd == "exit") {
-      std::cout << "Goodbye ! Thanks for using FC26 Ultimate Team Manager .\n";
-      break;
+  std::string Manager::readString(std::istream &is) const
+  {
+    std::string result;
+    is >> std::ws;
+    if (is.peek() == '"') {
+      is.get();
+      std::getline(is, result, '"');
+    } else {
+      is >> result;
     }
-    processCommand(cmd);
+    return result;
   }
-}
 
-std::string chadin::Manager::readStringToken()
-{
-  std::string token;
-  std::cin >> std::ws;
-  if (std::cin.peek() == '"') {
-    std::cin.get();
-    std::getline(std::cin, token, '"');
-  } else {
-    std::cin >> token;
-  }
-  return token;
-}
-
-std::string chadin::Manager::getSquadsForPlayer(const int id) const
-{
-  std::string result = "";
-  for (const std::pair< const std::string, Squad >& pair : squads_) {
-    if (pair.second.hasPlayer(id)) {
-      if (!result.empty()) {
-        result += ", ";
+  void Manager::run()
+  {
+    std::string command;
+    while (std::cin >> command) {
+      try {
+        if (command == "exit") {
+          std::cout << "Goodbye! Thanks for using FC26 Ultimate Team Manager.\n";
+          break;
+        } else if (command == "add-player") {
+          processAddPlayer();
+        } else if (command == "remove-player") {
+          processRemovePlayer();
+        } else if (command == "find-player") {
+          processFindPlayer();
+        } else if (command == "list-players") {
+          processListPlayers();
+        } else if (command == "show-table-stats") {
+          processShowTableStats();
+        } else if (command == "create-squad") {
+          processCreateSquad();
+        } else if (command == "delete-squad") {
+          processDeleteSquad();
+        } else if (command == "list-squads") {
+          processListSquads();
+        } else if (command == "show-squad") {
+          processShowSquad();
+        } else if (command == "add-to-squad") {
+          processAddToSquad();
+        } else if (command == "remove-from-squad") {
+          processRemoveFromSquad();
+        } else if (command == "clear-squad") {
+          processClearSquad();
+        } else if (command == "calc-team-rating") {
+          processCalcTeamRating();
+        } else if (command == "predict-match") {
+          processPredictMatch();
+        } else if (command == "help") {
+          processHelp();
+        } else {
+          std::cout << "<INVALID COMMAND> Unknown command.\n";
+        }
+      } catch (const std::exception &e) {
+        std::cout << "<INVALID COMMAND> " << e.what() << "\n";
       }
-      result += "\"" + pair.first + "\"";
     }
   }
-  return result;
-}
 
-void chadin::Manager::processCommand(const std::string& cmd)
-{
-  if (cmd == "add-player") cmdAddPlayer();
-  else if (cmd == "remove-player") cmdRemovePlayer();
-  else if (cmd == "find-player") cmdFindPlayer();
-  else if (cmd == "list-players") cmdListPlayers();
-  else if (cmd == "show-table-stats") cmdShowTableStats();
-  else if (cmd == "create-squad") cmdCreateSquad();
-  else if (cmd == "delete-squad") cmdDeleteSquad();
-  else if (cmd == "list-squads") cmdListSquads();
-  else if (cmd == "show-squad") cmdShowSquad();
-  else if (cmd == "add-to-squad") cmdAddToSquad();
-  else if (cmd == "remove-from-squad") cmdRemoveFromSquad();
-  else if (cmd == "clear-squad") cmdClearSquad();
-  else if (cmd == "calc-chemistry") cmdCalcChemistry();
-  else if (cmd == "calc-team-rating") cmdCalcTeamRating();
-  else if (cmd == "predict-match") cmdPredictMatch();
-  else if (cmd == "help") cmdHelp();
-  else {
-    std::cerr << "<INVALID COMMAND> Unknown command: " << cmd << "\n";
-  }
-}
+  void Manager::processAddPlayer()
+  {
+    int id = 0;
+    std::cin >> id;
+    std::string name = readString(std::cin);
+    std::string nation = readString(std::cin);
+    std::string league = readString(std::cin);
+    std::string pos = readString(std::cin);
+    int pac = 0;
+    int sho = 0;
+    int pas = 0;
+    int dri = 0;
+    int def = 0;
+    int phy = 0;
+    std::cin >> pac >> sho >> pas >> dri >> def >> phy;
 
-void chadin::Manager::cmdAddPlayer()
-{
-  int id = 0;
-  int pac = 0;
-  int sho = 0;
-  int pas = 0;
-  int dri = 0;
-  int def = 0;
-  int phy = 0;
-  std::cin >> id;
-  std::string name = readStringToken();
-  std::string nation = readStringToken();
-  std::string league = readStringToken();
-  std::string pos = readStringToken();
-  std::cin >> pac >> sho >> pas >> dri >> def >> phy;
-  Player p(id, name, nation, league, pos, pac, sho, pas, dri, def, phy);
-  if (collection_.addPlayer(p)) {
+    Player p(id, name, nation, league, pos, pac, sho, pas, dri, def, phy);
+    collection_.addPlayer(p);
     std::cout << "[OK] Player " << id << " (" << name << ") added to club collection.\n";
-  } else {
-    std::cerr << "<INVALID COMMAND> Player with id " << id << " already exists.\n";
   }
-}
 
-void chadin::Manager::cmdRemovePlayer()
-{
-  int id = 0;
-  std::cin >> id;
-  Player p;
-  if (collection_.findPlayer(id, p)) {
+  void Manager::processRemovePlayer()
+  {
+    int id = 0;
+    std::cin >> id;
     collection_.removePlayer(id);
-    std::cout << "[OK] Player " << id << " (" << p.getName() << ") removed from club collection.\n";
-    std::string squadsStr = getSquadsForPlayer(id);
-    if (!squadsStr.empty()) {
-      std::cout << "[INFO] Player was also removed from squads: " << squadsStr << "\n";
-      for (std::pair< const std::string, Squad >& pair : squads_) {
+
+    std::vector<std::string> removedFrom;
+    for (auto &pair : squads_) {
+      if (pair.second.hasPlayer(id)) {
         pair.second.removePlayer(id);
+        removedFrom.push_back(pair.first);
       }
     }
-  } else {
-    std::cerr << "<INVALID COMMAND> Player with id " << id << " not found.\n";
-  }
-}
 
-void chadin::Manager::cmdFindPlayer()
-{
-  int id = 0;
-  std::cin >> id;
-  Player p;
-  if (collection_.findPlayer(id, p)) {
-    std::cout << "[FOUND] ID: " << p.getId() << " | Name: " << p.getName()
-              << " | Nation: " << p.getNation() << " | League: " << p.getLeague()
-              << " | Position: " << p.getPosition() << "\n"
-              << "Pace: " << p.getPace() << " | Shooting: " << p.getShooting()
-              << " | Passing: " << p.getPassing() << " | Dribbling: " << p.getDribbling()
-              << " | Defending: " << p.getDefending() << " | Physical: " << p.getPhysical() << "\n"
-              << "Total rating (avg): " << std::fixed << std::setprecision(1) << p.getRating() << "\n";
-    std::string squadsStr = getSquadsForPlayer(id);
-    if (!squadsStr.empty()) {
-      std::cout << "In squads: " << squadsStr << "\n";
-    } else {
-      std::cout << "In squads: None\n";
-    }
-  } else {
-    std::cerr << "<INVALID COMMAND> Player with id " << id << " not found.\n";
-  }
-}
-
-void chadin::Manager::cmdListPlayers()
-{
-  std::cout << "========== CLUB COLLECTION (Robin Hood Hash Table) ==========\n";
-  const std::vector< Collection::Entry_t >& table = collection_.getTable();
-  for (const Collection::Entry_t& entry : table) {
-    if (entry.status_ == Collection::Status::OCCUPIED) {
-      std::cout << "ID: " << entry.player_.getId() << " | Name: " << entry.player_.getName()
-                << " | Rating: " << std::fixed << std::setprecision(1)
-                << entry.player_.getRating() << "\n";
+    std::cout << "[OK] Player " << id << " removed from club collection.\n";
+    if (!removedFrom.empty()) {
+      std::cout << "[INFO] Player was also removed from squads: ";
+      for (size_t i = 0; i < removedFrom.size(); ++i) {
+        std::cout << "\"" << removedFrom[i] << "\"" << (i + 1 == removedFrom.size() ? "" : ", ");
+      }
+      std::cout << "\n";
     }
   }
-  std::cout << "Total players: " << collection_.getSize() << "\n";
-}
 
-void chadin::Manager::cmdCreateSquad()
-{
-  std::string name = readStringToken();
-  if (squads_.find(name) == squads_.end()) {
-    squads_[name] = Squad(name);
+  void Manager::processFindPlayer()
+  {
+    int id = 0;
+    std::cin >> id;
+    const Player *p = collection_.findPlayer(id);
+    if (!p) {
+      throw std::runtime_error("Player not found.");
+    }
+
+    std::cout << "[FOUND] ID: " << p->getId() << " | Name: " << p->getName() << "\n"
+              << "Rating (avg): " << p->getAverageRating() << "\n";
+
+    std::vector<std::string> inSquads;
+    for (const auto &pair : squads_) {
+      if (pair.second.hasPlayer(id)) {
+        inSquads.push_back(pair.first);
+      }
+    }
+    if (!inSquads.empty()) {
+      std::cout << "In squads: ";
+      for (size_t i = 0; i < inSquads.size(); ++i) {
+        std::cout << "\"" << inSquads[i] << "\"" << (i + 1 == inSquads.size() ? "" : ", ");
+      }
+      std::cout << "\n";
+    }
+  }
+
+  void Manager::processListPlayers()
+  {
+    collection_.listPlayers();
+  }
+
+  void Manager::processShowTableStats()
+  {
+    collection_.showTableStats();
+  }
+
+  void Manager::processCreateSquad()
+  {
+    std::string name = readString(std::cin);
+    if (squads_.find(name) != squads_.end()) {
+      throw std::runtime_error("Squad already exists.");
+    }
+    squads_.insert({name, Squad(name)});
     std::cout << "[OK] Squad \"" << name << "\" created (0/11 players).\n";
-  } else {
-    std::cerr << "<INVALID COMMAND> Squad \"" << name << "\" already exists.\n";
   }
-}
 
-void chadin::Manager::cmdDeleteSquad()
-{
-  std::string name = readStringToken();
-  if (squads_.size() <= 1) {
-    std::cerr << "<INVALID COMMAND> Cannot delete the last squad. At least one must exist.\n";
-  } else {
-    std::map< std::string, Squad >::iterator it = squads_.find(name);
-    if (it != squads_.end()) {
-      squads_.erase(it);
-      std::cout << "[OK] Squad \"" << name << "\" deleted.\n";
-    } else {
-      std::cerr << "<INVALID COMMAND> Squad \"" << name << "\" not found.\n";
+  void Manager::processDeleteSquad()
+  {
+    std::string name = readString(std::cin);
+    auto it = squads_.find(name);
+    if (it == squads_.end()) {
+      throw std::runtime_error("Squad does not exist.");
     }
-  }
-}
-void chadin::Manager::cmdShowTableStats()
-{
-  std::cout << "========== Robin Hood Hash Table Statistics ==========\n"
-            << "Table size: " << collection_.getCapacity() << "\n"
-            << "Elements: " << collection_.getSize() << "\n"
-            << "Load factor: " << collection_.getLoadFactor() << "\n"
-            << "Collisions total: " << collection_.getCollisions() << "\n"
-            << "Average probe dist: " << collection_.getAverageProbe() << "\n"
-            << "Max probe dist: " << collection_.getMaxProbe() << "\n"
-            << "Rehash count: " << collection_.getRehashCount() << "\n";
-}
-
-void chadin::Manager::cmdListSquads()
-{
-  std::cout << "========== ALL SQUADS ==========\n";
-  for (const std::pair< const std::string, Squad >& pair : squads_) {
-    std::cout << pair.first << " (" << pair.second.getPlayerCount() << "/11 players)\n";
-  }
-  std::cout << "Total squads: " << squads_.size() << "\n";
-}
-
-void chadin::Manager::cmdShowSquad()
-{
-  const std::string squadName = readStringToken();
-  auto it = squads_.find(squadName);
-
-  if (it == squads_.end()) {
-    std::cout << "<INVALID COMMAND>\n";
-    return;
-  }
-
-  const Squad& squad = it->second;
-  std::cout << "Players in squad: " << squad.getName() << "\n";
-
-  const std::vector<std::string> positions = {
-    "GK", "LB", "CB1", "CB2", "RB", "CDM", "CM1", "CM2", "LW", "RW", "ST"
-  };
-
-  for (const auto& pos : positions) {
-    std::cout << "  " << pos << ": ";
-    if (squad.hasPlayerAtPosition(pos)) {
-      const int playerId = squad.getPlayerIdAtPosition(pos);
-      chadin::Player player;
-      if (collection_.findPlayer(playerId, player)) {
-        std::cout << player.getName() << " (ID: " << playerId
-                  << ", OVR: " << player.getRating() << ")\n";
-      } else {
-        std::cout << "Unknown Player (ID: " << playerId << ")\n";
-      }
-    } else {
-      std::cout << "Empty\n";
+    if (squads_.size() == 1) {
+      throw std::runtime_error("Cannot delete the last squad. At least one must exist.");
     }
+    squads_.erase(it);
+    std::cout << "[OK] Squad \"" << name << "\" deleted.\n";
   }
-}
 
-void chadin::Manager::cmdAddToSquad()
-{
-  std::string name = readStringToken();
-  int id = 0;
-  std::cin >> id;
-  std::map< std::string, Squad >::iterator it = squads_.find(name);
-  if (it == squads_.end()) {
-    std::cerr << "<INVALID COMMAND> Squad not found.\n";
-    return;
-  }
-  Player p;
-  if (!collection_.findPlayer(id, p)) {
-    std::cerr << "<INVALID COMMAND> Player not found in collection.\n";
-    return;
-  }
-  if (it->second.addPlayer(id, p.getPosition())) {
-    std::cout << "[OK] Added to squad.\n";
-  } else {
-    std::cerr << "<INVALID COMMAND> Cannot add player (already in or slot full).\n";
-  }
-}
-
-void chadin::Manager::cmdRemoveFromSquad()
-{
-  std::string name = readStringToken();
-  int id = 0;
-  std::cin >> id;
-  std::map< std::string, Squad >::iterator it = squads_.find(name);
-  if (it != squads_.end()) {
-    if (it->second.removePlayer(id)) {
-      std::cout << "[OK] Removed from squad.\n";
-    } else {
-      std::cerr << "<INVALID COMMAND> Player not in squad.\n";
+  void Manager::processListSquads()
+  {
+    std::cout << "========== ALL SQUADS ==========\n";
+    for (const auto &pair : squads_) {
+      std::cout << pair.first << " (" << pair.second.getPlayerCount() << "/11 players)\n";
     }
-  } else {
-    std::cerr << "<INVALID COMMAND> Squad not found.\n";
+    std::cout << "Total squads: " << squads_.size() << "\n";
   }
-}
 
-void chadin::Manager::cmdClearSquad()
-{
-  std::string name = readStringToken();
-  std::map< std::string, Squad >::iterator it = squads_.find(name);
-  if (it != squads_.end()) {
+  void Manager::processShowSquad()
+  {
+    std::string name = readString(std::cin);
+    auto it = squads_.find(name);
+    if (it == squads_.end()) {
+      throw std::runtime_error("Squad does not exist.");
+    }
+    it->second.show();
+  }
+
+  void Manager::processAddToSquad()
+  {
+    std::string name = readString(std::cin);
+    int id = 0;
+    std::cin >> id;
+
+    auto it = squads_.find(name);
+    if (it == squads_.end()) {
+      throw std::runtime_error("Squad does not exist.");
+    }
+    const Player *p = collection_.findPlayer(id);
+    if (!p) {
+      throw std::runtime_error("Player not found in collection.");
+    }
+    it->second.addPlayer(*p);
+    std::cout << "[OK] Player added to squad.\n";
+  }
+
+  void Manager::processRemoveFromSquad()
+  {
+    std::string name = readString(std::cin);
+    int id = 0;
+    std::cin >> id;
+
+    auto it = squads_.find(name);
+    if (it == squads_.end()) {
+      throw std::runtime_error("Squad does not exist.");
+    }
+    it->second.removePlayer(id);
+    std::cout << "[OK] Player removed from squad.\n";
+  }
+
+  void Manager::processClearSquad()
+  {
+    std::string name = readString(std::cin);
+    auto it = squads_.find(name);
+    if (it == squads_.end()) {
+      throw std::runtime_error("Squad does not exist.");
+    }
     it->second.clear();
-    std::cout << "[OK] Squad cleared.\n";
-  } else {
-    std::cerr << "<INVALID COMMAND> Squad not found.\n";
-  }
-}
-
-void chadin::Manager::cmdCalcChemistry()
-{
-  const std::string squadName = readStringToken();
-  auto it = squads_.find(squadName);
-
-  if (it == squads.end()) {
-    std::cout << "<INVALID COMMAND>\n";
-    return;
+    std::cout << "[OK] Squad \"" << name << "\" cleared.\n";
   }
 
-  const Squad& squad = it->second;
+  double Manager::calculateSquadRating(const Squad& squad, bool printDetails) const
+  {
+    if (squad.getPlayerCount() < 11) {
+      throw std::runtime_error("Squad must have 11 players to calculate rating.");
+    }
 
-  if (squad.getPlayerCount() < 11) {
-    std::cout << "Error: Squad must have exactly 11 players to calculate chemistry.\n";
-    return;
-  }
+    std::vector<int> ids = squad.getPlayerIds();
+    double a[11][7] = {0.0};
 
-  const int chemistry = squad.calculateChemistry(collection);
-  std::cout << "Total chemistry: " << chemistry << "/33\n";
-}
-
-void chadin::Manager::cmdCalcTeamRating()
-{
-  std::string name = readStringToken();
-  std::map< std::string, Squad >::const_iterator it = squads_.find(name);
-  if (it == squads_.end() || it->second.getPlayerCount() < Squad::SQUAD_SIZE) {
-    std::cerr << "<INVALID COMMAND> Squad must have 11 players.\n";
-    return;
-  }
-  std::vector< std::vector< double > > matrix(EQUATIONS_COUNT, std::vector< double >(COLUMNS_COUNT, 0.0));
-  for (int i = 0; i < Squad::SQUAD_SIZE; ++i) {
-    Player p;
-    collection_.findPlayer(it->second.getPlayerAt(i), p);
-    matrix[i][0] = p.getPace();
-    matrix[i][1] = p.getShooting();
-    matrix[i][2] = p.getPassing();
-    matrix[i][3] = p.getDribbling();
-    matrix[i][4] = p.getDefending();
-    matrix[i][5] = p.getPhysical();
-    matrix[i][6] = p.getRating();
-  }
-  for (int k = 0; k < UNKNOWNS_COUNT; ++k) {
-    int maxPivotRow = k;
-    double maxVal = std::abs(matrix[k][k]);
-    for (int i = k + 1; i < EQUATIONS_COUNT; ++i) {
-      if (std::abs(matrix[i][k]) > maxVal) {
-        maxVal = std::abs(matrix[i][k]);
-        maxPivotRow = i;
+    for (int i = 0; i < 11; ++i) {
+      const Player *p = collection_.findPlayer(ids[i]);
+      if (p) {
+        a[i][0] = p->getPace();
+        a[i][1] = p->getShooting();
+        a[i][2] = p->getPassing();
+        a[i][3] = p->getDribbling();
+        a[i][4] = p->getDefending();
+        a[i][5] = p->getPhysical();
+        a[i][6] = p->getAverageRating();
       }
     }
-    std::swap(matrix[k], matrix[maxPivotRow]);
-    double pivot = matrix[k][k];
-    if (std::abs(pivot) > 1e-9) {
-      for (int j = k; j < COLUMNS_COUNT; ++j) {
-        matrix[k][j] /= pivot;
+
+    if (printDetails) {
+      std::cout << "========== GAUSSIAN ELIMINATION ==========\n"
+                << "Squad: \"" << squad.getName() << "\" (11/11 players)\n";
+    }
+
+    for (int k = 0; k < 6; ++k) {
+      int maxRow = k;
+      for (int i = k + 1; i < 11; ++i) {
+        if (std::abs(a[i][k]) > std::abs(a[maxRow][k])) {
+          maxRow = i;
+        }
       }
-      for (int i = k + 1; i < EQUATIONS_COUNT; ++i) {
-        double factor = matrix[i][k];
-        for (int j = k; j < COLUMNS_COUNT; ++j) {
-          matrix[i][j] -= factor * matrix[k][j];
+
+      for (int j = 0; j <= 6; ++j) {
+        std::swap(a[k][j], a[maxRow][j]);
+      }
+
+      double pivot = a[k][k];
+      if (std::abs(pivot) > 1e-9) {
+        for (int j = 0; j <= 6; ++j) {
+          a[k][j] /= pivot;
+        }
+        for (int i = k + 1; i < 11; ++i) {
+          double factor = a[i][k];
+          for (int j = k; j <= 6; ++j) {
+            a[i][j] -= factor * a[k][j];
+          }
         }
       }
     }
-  }
-  std::vector< double > weights(UNKNOWNS_COUNT, 0.0);
-  for (int i = UNKNOWNS_COUNT - 1; i >= 0; --i) {
-    double sum = 0.0;
-    for (int j = i + 1; j < UNKNOWNS_COUNT; ++j) {
-      sum += matrix[i][j] * weights[j];
+
+    std::vector<double> weights(6, 0.0);
+    for (int i = 5; i >= 0; --i) {
+      weights[i] = a[i][6];
+      for (int j = i + 1; j < 6; ++j) {
+        weights[i] -= a[i][j] * weights[j];
+      }
     }
-    weights[i] = matrix[i][6] - sum;
+
+    double weightSum = 0.0;
+    for (double w : weights) {
+      weightSum += std::abs(w);
+    }
+    if (weightSum > 1e-9) {
+      for (double &w : weights) {
+        w = std::abs(w) / weightSum;
+      }
+    }
+
+    double teamRating = 0.0;
+    for (int i = 0; i < 11; ++i) {
+      const Player *p = collection_.findPlayer(ids[i]);
+      if (p) {
+        teamRating += weights[0] * p->getPace() +
+                      weights[1] * p->getShooting() +
+                      weights[2] * p->getPassing() +
+                      weights[3] * p->getDribbling() +
+                      weights[4] * p->getDefending() +
+                      weights[5] * p->getPhysical();
+      }
+    }
+
+    double finalRating = teamRating / 11.0;
+
+    if (printDetails) {
+      std::cout << "Final team rating for \"" << squad.getName() << "\": "
+                << std::fixed << std::setprecision(1) << finalRating << "\n";
+    }
+
+    return finalRating;
   }
-  double finalRating = 0.0;
-  for (int i = 0; i < Squad::SQUAD_SIZE; ++i) {
-    Player p;
-    collection_.findPlayer(it->second.getPlayerAt(i), p);
-    finalRating += (weights[0] * p.getPace() + weights[1] * p.getShooting() + weights[2] * p.getPassing() +
-                    weights[3] * p.getDribbling() + weights[4] * p.getDefending() + weights[5] * p.getPhysical());
-  }
-  finalRating /= Squad::SQUAD_SIZE;
-  std::cout << "Final team rating for \"" << name << "\": " << std::fixed << std::setprecision(1) << finalRating << "\n";
-}
 
-void chadin::Manager::cmdPredictMatch()
-{
-  const std::string squadName = readStringToken();
-  const double opponentRating = readDoubleToken();
+  void Manager::processCalcTeamRating()
+  {
+    std::string name = readString(std::cin);
+    auto it = squads_.find(name);
+    if (it == squads_.end()) {
+      throw std::runtime_error("Squad does not exist.");
+    }
 
-  auto it = squads.find(squadName);
-  if (it == squads.end()) {
-    std::cout << "<INVALID COMMAND>\n";
-    return;
+    calculateSquadRating(it->second, true);
   }
 
-  const Squad& squad = it->second;
-  const double myRating = squad.calculateRating(collection);
-  const double ratingDiff = myRating - opponentRating;
+  void Manager::processPredictMatch()
+  {
+    std::string name = readString(std::cin);
+    double opponentRating = 0.0;
+    std::cin >> opponentRating;
 
-  const double pDraw = 0.22 * std::exp(-0.04 * std::abs(ratingDiff));
-  const double pWin = (1.0 - pDraw) / (1.0 + std::exp(-0.12 * ratingDiff));
-  const double pLoss = 1.0 - pWin - pDraw;
+    auto it = squads_.find(name);
+    if (it == squads_.end()) {
+      throw std::runtime_error("Squad does not exist.");
+    }
 
-  std::cout << "Win probability: " << std::fixed << std::setprecision(1)
-            << pWin * 100.0 << "%\n";
-  std::cout << "Draw probability: " << std::fixed << std::setprecision(1)
-            << pDraw * 100.0 << "%\n";
-  std::cout << "Loss probability: " << std::fixed << std::setprecision(1)
-            << pLoss * 100.0 << "%\n";
-}
+    double teamRating = calculateSquadRating(it->second, false);
 
-void chadin::Manager::cmdHelp()
-{
-  std::cout << "Available commands:\n"
-            << "  add-player <id> <name> <nation> <league> <pos> <pac> <sho> <pas> <dri> <def> <phy>\n"
-            << "  remove-player <id>\n"
-            << "  find-player <id>\n"
-            << "  list-players\n"
-            << "  show-table-stats\n"
-            << "  create-squad <squad-name>\n"
-            << "  add-to-squad <squad-name> <player-id> <position>\n"
-            << "  remove-from-squad <squad-name> <position>\n"
-            << "  show-squad <squad-name>\n"
-            << "  calc-rating <squad-name>\n"
-            << "  calc-chemistry <squad-name>\n"
-            << "  predict-match <squad-name> <opponent-rating>\n"
-            << "  exit\n";
+    double pWin = 1.0 / (1.0 + std::exp(-(teamRating - opponentRating) / 10.0));
+    double pLoss = 1.0 / (1.0 + std::exp(-(opponentRating - teamRating) / 10.0));
+    double pDraw = 1.0 - pWin - pLoss;
+
+    if (pDraw < 0.0) pDraw = 0.0;
+
+    double diff = teamRating - opponentRating;
+
+    std::cout << "======= MATCH PREDICTION ==========\n"
+              << "Squad: \"" << name << "\"\n"
+              << "Team rating: " << std::fixed << std::setprecision(1) << teamRating << "\n"
+              << "Opponent rating: " << opponentRating << "\n"
+              << "Rating difference: " << (diff > 0 ? "+" : "") << diff << "\n"
+              << "Win probability: " << std::fixed << std::setprecision(1) << (pWin * 100.0) << "%\n"
+              << "Loss probability: " << (pLoss * 100.0) << "%\n";
+  }
+
+  void Manager::processHelp() const
+  {
+    std::cout << "=== FC26 ULTIMATE TEAM MANAGER ===\n"
+              << "Commands:\n"
+              << " add-player, remove-player, find-player, list-players, show-table-stats\n"
+              << " create-squad, delete-squad, list-squads, show-squad\n"
+              << " add-to-squad, remove-from-squad, clear-squad\n"
+              << " calc-team-rating, predict-match\n"
+              << " help, exit\n";
+  }
+
 }

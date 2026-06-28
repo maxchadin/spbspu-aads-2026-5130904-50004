@@ -1,167 +1,165 @@
 #include "Collection.hpp"
+#include <iostream>
 #include <algorithm>
 
-const int INITIAL_CAPACITY = 16;
+namespace chadin {
 
-chadin::Collection::Collection():
-  table_(INITIAL_CAPACITY),
-  size_(0),
-  capacity_(INITIAL_CAPACITY),
-  collisionsTotal_(0),
-  rehashCount_(0),
-  maxProbeDist_(0),
-  totalProbeDist_(0)
-{
-  for (int i = 0; i < capacity_; ++i) {
-    table_[i].status_ = Status::EMPTY;
-    table_[i].probeDistance_ = 0;
+  Collection::Collection():
+    table_(16),
+    size_(0),
+    capacity_(16),
+    collisionsTotal_(0),
+    rehashCount_(0),
+    maxProbeDistance_(0)
+  {
   }
-}
 
-chadin::Collection::~Collection()
-{
-}
-
-bool chadin::Collection::addPlayer(const Player& player)
-{
-  if (hasPlayer(player.getId())) {
-    return false;
-  }
-  const double maxLoadFactor = 0.5;
-  if (static_cast< double >(size_) >= maxLoadFactor * capacity_) {
-    rehash();
-  }
-  Entry_t curr{player, Status::OCCUPIED, 0};
-  int index = hash(player.getId());
-  while (table_[index].status_ == Status::OCCUPIED) {
-    if (curr.probeDistance_ > table_[index].probeDistance_) {
-      std::swap(curr, table_[index]);
+  void Collection::addPlayer(const Player &player)
+  {
+    if (findPlayer(player.getId()) != nullptr) {
+      throw std::runtime_error("Player with this ID already exists.");
     }
-    index = (index + 1) % capacity_;
-    curr.probeDistance_++;
-    collisionsTotal_++;
-  }
-  table_[index] = curr;
-  size_++;
-  totalProbeDist_ += curr.probeDistance_;
-  if (curr.probeDistance_ > maxProbeDist_) {
-    maxProbeDist_ = curr.probeDistance_;
-  }
-  return true;
-}
 
-bool chadin::Collection::removePlayer(const int id)
-{
-  int index = hash(id);
-  int dist = 0;
-  while (table_[index].status_ != Status::EMPTY && dist <= capacity_) {
-    if (table_[index].status_ == Status::OCCUPIED && table_[index].player_.getId() == id) {
-      table_[index].status_ = Status::DELETED;
-      size_--;
-      return true;
+    if (static_cast<double>(size_) / capacity_ >= 0.5) {
+      rehash();
     }
-    index = (index + 1) % capacity_;
-    dist++;
+
+    HashEntry newEntry;
+    newEntry.id = player.getId();
+    newEntry.player = player;
+    newEntry.probeDistance = 0;
+    newEntry.isOccupied = true;
+    newEntry.isDeleted = false;
+
+    insertHelper(newEntry);
   }
-  return false;
-}
 
-bool chadin::Collection::findPlayer(const int id, Player& outPlayer) const
-{
-  int index = hash(id);
-  int dist = 0;
-  while (table_[index].status_ != Status::EMPTY && dist <= capacity_) {
-    if (table_[index].status_ == Status::OCCUPIED && table_[index].player_.getId() == id) {
-      outPlayer = table_[index].player_;
-      return true;
-    }
-    index = (index + 1) % capacity_;
-    dist++;
-  }
-  return false;
-}
+  void Collection::insertHelper(HashEntry entry)
+  {
+    int currentPos = entry.id % capacity_;
 
-bool chadin::Collection::hasPlayer(const int id) const
-{
-  Player dummy;
-  return findPlayer(id, dummy);
-}
+    while (true) {
+      if (!table_[currentPos].isOccupied || table_[currentPos].isDeleted) {
+        table_[currentPos] = entry;
+        size_++;
+        if (entry.probeDistance > maxProbeDistance_) {
+          maxProbeDistance_ = entry.probeDistance;
+        }
+        return;
+      }
 
-const std::vector< chadin::Collection::Entry_t >& chadin::Collection::getTable() const
-{
-  return table_;
-}
+      if (entry.probeDistance > table_[currentPos].probeDistance) {
+        std::swap(entry, table_[currentPos]);
+      }
 
-int chadin::Collection::getSize() const
-{
-  return size_;
-}
-
-int chadin::Collection::getCapacity() const
-{
-  return capacity_;
-}
-
-double chadin::Collection::getLoadFactor() const
-{
-  if (capacity_ == 0) {
-    return 0.0;
-  } else {
-    return static_cast< double >(size_) / capacity_;
-  }
-}
-
-int chadin::Collection::getCollisions() const
-{
-  return collisionsTotal_;
-}
-
-double chadin::Collection::getAverageProbe() const
-{
-  if (size_ == 0) {
-    return 0.0;
-  } else {
-    return static_cast< double >(totalProbeDist_) / size_;
-  }
-}
-
-int chadin::Collection::getMaxProbe() const
-{
-  return maxProbeDist_;
-}
-
-int chadin::Collection::getRehashCount() const
-{
-  return rehashCount_;
-}
-
-void chadin::Collection::clear()
-{
-  table_.assign(capacity_, Entry_t{Player(), Status::EMPTY, 0});
-  size_ = 0;
-  collisionsTotal_ = 0;
-  maxProbeDist_ = 0;
-  totalProbeDist_ = 0;
-}
-
-void chadin::Collection::rehash()
-{
-  std::vector< Entry_t > oldTable = table_;
-  capacity_ *= 2;
-  table_.assign(capacity_, Entry_t{Player(), Status::EMPTY, 0});
-  size_ = 0;
-  collisionsTotal_ = 0;
-  maxProbeDist_ = 0;
-  totalProbeDist_ = 0;
-  rehashCount_++;
-  for (const Entry_t& entry : oldTable) {
-    if (entry.status_ == Status::OCCUPIED) {
-      addPlayer(entry.player_);
+      entry.probeDistance++;
+      currentPos = (currentPos + 1) % capacity_;
+      collisionsTotal_++;
     }
   }
-}
 
-int chadin::Collection::hash(const int id) const
-{
-  return id % capacity_;
+  void Collection::rehash()
+  {
+    rehashCount_++;
+    int oldCapacity = capacity_;
+    capacity_ *= 2;
+    std::vector<HashEntry> oldTable = table_;
+
+    table_.clear();
+    table_.resize(capacity_);
+    size_ = 0;
+
+    for (int i = 0; i < oldCapacity; ++i) {
+      if (oldTable[i].isOccupied && !oldTable[i].isDeleted) {
+        oldTable[i].probeDistance = 0;
+        insertHelper(oldTable[i]);
+      }
+    }
+  }
+
+  void Collection::removePlayer(int id)
+  {
+    int currentPos = id % capacity_;
+    int distance = 0;
+
+    while (table_[currentPos].isOccupied) {
+      if (!table_[currentPos].isDeleted && table_[currentPos].id == id) {
+        table_[currentPos].isDeleted = true;
+        size_--;
+        return;
+      }
+      if (distance > table_[currentPos].probeDistance) {
+        break;
+      }
+      distance++;
+      currentPos = (currentPos + 1) % capacity_;
+    }
+    throw std::runtime_error("Player not found.");
+  }
+
+  const Player* Collection::findPlayer(int id) const
+  {
+    if (capacity_ == 0) {
+      return nullptr;
+    }
+
+    int currentPos = id % capacity_;
+    int distance = 0;
+
+    while (table_[currentPos].isOccupied) {
+      if (!table_[currentPos].isDeleted && table_[currentPos].id == id) {
+        return &table_[currentPos].player;
+      }
+      if (distance > table_[currentPos].probeDistance) {
+        return nullptr;
+      }
+      distance++;
+      currentPos = (currentPos + 1) % capacity_;
+    }
+    return nullptr;
+  }
+
+  void Collection::listPlayers() const
+  {
+    std::vector<Player> sortedPlayers;
+    for (const auto &entry : table_) {
+      if (entry.isOccupied && !entry.isDeleted) {
+        sortedPlayers.push_back(entry.player);
+      }
+    }
+
+    std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+      [](const Player &a, const Player &b) -> bool {
+        return a.getId() < b.getId();
+      }
+    );
+
+    std::cout << "========== CLUB COLLECTION (Robin Hood Hash Table) ==========\n";
+    for (const auto &p : sortedPlayers) {
+      std::cout << p.getId() << " | " << p.getName() << " | " << p.getNation() << " | "
+                << p.getLeague() << " | " << p.getPosition() << " | " << p.getAverageRating() << "\n";
+    }
+  }
+
+  void Collection::showTableStats() const
+  {
+    double loadFactor = capacity_ > 0 ? static_cast<double>(size_) / capacity_ : 0.0;
+    double avgProbe = size_ > 0 ? static_cast<double>(collisionsTotal_) / size_ : 0.0;
+
+    std::cout << "========== Robin Hood Hash Table Statistics ==========\n"
+              << "Table size: " << capacity_ << "\n"
+              << "Elements: " << size_ << "\n"
+              << "Load factor: " << loadFactor << "\n"
+              << "Collisions total: " << collisionsTotal_ << "\n"
+              << "Average probe dist: " << avgProbe << "\n"
+              << "Max probe dist: " << maxProbeDistance_ << "\n"
+              << "Rehash count: " << rehashCount_ << "\n"
+              << "======================================================\n";
+  }
+
+  const std::vector<Collection::HashEntry>& Collection::getTable() const
+  {
+    return table_;
+  }
+
 }
